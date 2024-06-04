@@ -1,0 +1,99 @@
+version: "3.1"
+
+stories:
+
+# - story: happy path
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - intent: mood_great
+#   - action: utter_happy
+
+# - story: sad path 1
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - intent: mood_unhappy
+#   - action: utter_cheer_up
+#   - action: utter_did_that_help
+#   - intent: affirm
+#   - action: utter_happy
+
+# - story: sad path 2
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - intent: mood_unhappy
+#   - action: utter_cheer_up
+#   - action: utter_did_that_help
+#   - intent: deny
+#   - action: utter_goodbye
+
+# - story: happy path 1
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - action: utter_prompt_painting
+#   - intent: choose_painting
+#   - action: utter_initial_question
+#   - intent: observation
+#   - action: utter_commend_observation
+#   - action: utter_ask_detail
+#   - intent: give_detail
+#   - action: utter_ask_another_observation
+#   - intent: observation
+#   - action: utter_ask_feelings
+#   - intent: describe_feelings
+#   - action: utter_explain_feelings
+#   - intent: give_detail
+#   - action: utter_ask_another_observation
+#   - intent: stop
+#   - action: utter_stop
+
+# - story: happy path 2
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - action: utter_prompt_painting
+#   - intent: choose_painting
+#   - action: utter_initial_question
+#   - intent: observation
+#   - action: utter_commend_observation
+#   - action: utter_ask_feelings
+#   - intent: describe_feelings
+#   - action: utter_explain_feelings
+#   - intent: give_detail
+#   - action: utter_ask_next_painting
+#   - intent: affirm
+#   - action: utter_prompt_painting
+#   - intent: choose_painting
+#   - action: utter_initial_question
+#   - intent: observation
+#   - action: utter_brigde_prompts
+#   - action: utter_ask_detail
+#   - intent: give_detail
+#   - action: utter_ask_feelings
+#   - intent: describe_feelings
+#   - action: utter_explain_feelings
+#   - intent: give_detail
+
+
+# - story: happy path 3
+#   steps:
+#   - intent: greet
+#   - action: utter_greet
+#   - action: utter_prompt_painting
+#   - intent: choose_painting
+#   - action: utter_initial_question
+#   - intent: observation
+#   - action: utter_ask_next_painting
+#   - intent: affirm
+#   - action: utter_prompt_painting
+#   - intent: choose_painting
+#   - action: utter_initial_question
+#   - intent: observation
+#   - action: utter_brigde_prompts
+#   - action: utter_ask_favourite_painting
+#   - intent: pick_favourite_painting
+#   - action: utter_compare_active_favourite
+

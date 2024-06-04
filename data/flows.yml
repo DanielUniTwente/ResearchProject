@@ -1,0 +1,168 @@
+flows:
+  greet_user:
+    description: "Greets the user back"
+    # nlu_trigger:
+    #   - intent: "greet"
+    steps:
+      - action: "utter_greet"
+      - link: "test_database"
+    
+  test_database:
+    description: "Tests the database connection"
+    if: False
+    steps:
+      - action: "action_test_database_access"
+      - link: "choose_painting"
+
+
+  choose_painting:
+    description: "Prompts the user to choose a painting from a list of 4 paintings"
+    steps:
+      - collect: "active_painting"
+        ask_before_filling: true
+        reset_after_flow_ends: false
+      - link: "observation"
+
+  # initial_question:
+  #   description: "Asks the user the initial question about the painting"
+  #   if: "slots.active_painting"
+  #   steps:
+  #     - action: "utter_initial_question"
+  #     - link: "observation"
+
+  observation:
+    description: "User is asked to make an observation about their chosen painting, until they say they have no more observations to make"
+    if: "slots.active_painting"
+    steps:
+      - id: "set_stage"
+        set_slots:
+          - stage: "observation"
+        next: "first_observation"
+      - id: "first_observation"
+        collect: "observation"
+        utter: utter_ask_first_observation
+        next: "loop"
+      - id: "loop"
+        collect: "observation"
+        ask_before_filling: true
+        utter: action_send_to_api
+        next:
+          - if: "slots.no_more"
+            then: "no_more_observation"
+          - else: "loop"
+      # - id: "more_observation"
+      #   action: "utter_commend_observation"
+      #   next: "detail"
+      # - id: "detail"
+      #   call: ask_detail
+      #   next: "loop"
+      - id: "no_more_observation"
+        observation: "empty"
+        link: "describe_story"
+
+  describe_story:
+    description: "User is asked to create a narrative about their chosen painting, until they say they have no more to add to the story"
+    if: "slots.active_painting"
+    steps:
+      - id: "set_stage"
+        set_slots:
+          - stage: "describe story"
+        next: "loop"
+      - id: "loop"
+        collect: "observation"
+        ask_before_filling: true
+        utter: action_send_to_api
+        next:
+          - if: "slots.no_more"
+            then: "no_more_observation"
+          - else: "loop"
+      - id: "no_more_observation"
+        observation: "empty"
+        link: "describe_author_technique"
+
+  describe_author_technique:
+    description: "User is asked to describe the author's technique in their chosen painting, until they say they have no more to add"
+    if: "slots.active_painting"
+    steps:
+      - id: "set_stage"
+        set_slots:
+          - stage: "describe author technique"
+        next: "loop"
+      - id: "loop"
+        collect: "observation"
+        ask_before_filling: true
+        utter: action_author_technique_api
+        next:
+          - if: "slots.no_more"
+            then: "no_more_observation"
+          - else: "loop"
+      - id: "no_more_observation"
+        observation: "empty"
+        link: "describe_feelings"
+
+  describe_feelings:
+    description: "Asks the user to describe their feelings about the painting"
+    if: "slots.active_painting"
+    steps:
+      - id: "set_stage"
+        set_slots:
+          - stage: "describe feelings"
+        next: "loop"
+      - id: "loop"
+        collect: "current_feeling"
+        ask_before_filling: true
+        utter: action_send_to_api
+        next:
+          - if: "slots.no_more"
+            then: "no_more_observation"
+          - else: "loop"
+      - id: "no_more_observation"
+        observation: "empty"
+        link: "compare_painting"
+
+  compare_painting:
+    description: "Asks the user to compare their chosen painting to the last painting"
+    if: "slots.active_painting and slots.last_active_painting"
+    steps:
+      - id: "set_stage"
+        set_slots:
+          - stage: "compare"
+        next: "loop"
+      - id: "loop"
+        collect: "observation"
+        ask_before_filling: true
+        utter: action_send_to_api
+        next:
+          - if: "slots.no_more"
+            then: "no_more_observation"
+          - else: "loop"
+      - id: "no_more_observation"
+        observation: "empty"
+        link: "next_painting"
+
+  summary:
+    description: "Summarizes the user's observations and feelings about the painting"
+    if: "slots.active_painting"
+    steps:
+      - action: action_summarize
+      - link: "next_painting"
+
+  next_painting:
+    description: "Prompts the user to choose the next painting"
+    if: "slots.active_painting"
+    steps:
+      - id: "set_last_active_painting"
+        last_active_painting: "active_painting"
+        link: "choose_painting"
+
+  challenge_bot:
+    description: "Responds to the user's challenge about whether they are talking to a bot or a human"
+    steps:
+      - action: "utter_iamabot"
+
+
+# ask_detail:
+  #   description: "Asks the user to provide more detail about their observation"
+  #   if: false
+  #   steps:
+  #     - collect: "detail"

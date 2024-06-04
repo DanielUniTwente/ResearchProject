@@ -1,0 +1,28 @@
+[
+  {
+    "tag_name": "entity",
+    "ids_to_tags": {
+      "1": "B-current_feeling",
+      "2": "I-current_feeling",
+      "3": "L-current_feeling",
+      "4": "U-current_feeling",
+      "5": "B-favourite_painting",
+      "6": "I-favourite_painting",
+      "7": "L-favourite_painting",
+      "8": "U-favourite_painting",
+      "0": "O"
+    },
+    "tags_to_ids": {
+      "B-current_feeling": 1,
+      "I-current_feeling": 2,
+      "L-current_feeling": 3,
+      "U-current_feeling": 4,
+      "B-favourite_painting": 5,
+      "I-favourite_painting": 6,
+      "L-favourite_painting": 7,
+      "U-favourite_painting": 8,
+      "O": 0
+    },
+    "num_tags": 9
+  }
+]

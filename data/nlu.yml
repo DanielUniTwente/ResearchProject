@@ -1,0 +1,92 @@
+version: "3.1"
+nlu:
+- intent: greet
+  examples: |
+    - hey
+    - hello
+    - hi
+    - hello there
+    - good morning
+    - good evening
+    - moin
+    - hey there
+    - let's go
+    - hey dude
+- intent: goodbye
+  examples: |
+    - cu
+    - good by
+    - cee you later
+    - good night
+    - bye
+    - goodbye
+    - have a nice day
+    - see you around
+    - bye bye
+    - see you later
+- intent: affirm
+  examples: |
+    - yes
+    - y
+    - indeed
+    - of course
+    - that sounds good
+    - correct
+- intent: deny
+  examples: |
+    - I don't think so
+    - no
+    - I cant see anything else
+- intent: bot_challenge
+  examples: |
+    - are you a bot?
+    - are you a human?
+    - am I talking to a bot?
+    - am I talking to a human?
+- intent: observation
+  examples: |
+    - I see a man who is well dressed
+    - I can see a boy wearing a
+    - There is a man who is holding
+    - There is a man
+- intent: give_detail
+  examples: |
+    - Well because
+    - I think that is because
+    - I believe that is because
+    - I feel that is because
+    - He is wearing
+    - He is holding
+    - It is covered
+    - It is wearing
+
+- intent: choose_painting
+  examples: |
+    - Koning Casper
+    - Head of a Boy in a Turban
+    - Portrait of Diego Bemba
+    - Portrait of Pedro Sunda
+- intent: describe_feelings
+  examples: |
+    - It makes me feel [happy](current_feeling)
+    - I feel [sad](current_feeling) when I see it
+    - I feel [angry](current_feeling) when I see it
+    - It evokes [loneliness](current_feeling) in me
+- intent: pick_favourite_painting
+  examples: |
+    - I like [portrait of diego bemba](favourite_painting) most
+    - My favorite is [koning casper](favourite_painting)
+    - I prefer [head of a boy in a turban](favourite_painting) more
+    - I think [portrait of pedro sunda](favourite_painting) is the best
+- intent: reason_favorite_painting
+  examples: |
+    - I like it because
+    - I prefer it because
+    - I think it is the best because
+    - I believe it is the best because
+    - I feel it is the best because
+- intent: stop
+  examples: |
+    - Lets stop for now
+    - I want to end the tour
+    - I want to quit viewing

@@ -1,0 +1,14 @@
+[
+  "observation",
+  "describe_feelings",
+  "affirm",
+  "greet",
+  "choose_painting",
+  "bot_challenge",
+  "pick_favourite_painting",
+  "reason_favorite_painting",
+  "goodbye",
+  "stop",
+  "deny",
+  "give_detail"
+]
