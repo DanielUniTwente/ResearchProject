@@ -16,6 +16,9 @@ import dotenv
 import os
 import openai
 
+from fuzzywuzzy import fuzz
+from fuzzywuzzy import process
+
 # load_status = dotenv.load_dotenv("actions/Neo4j-5775be33-Created-2024-05-27.txt")
 # if load_status is False:
 #     raise RuntimeError('Environment variables not loaded.')
@@ -65,51 +68,51 @@ class ActionSendToAPI(Action):
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
         # user_input = tracker.latest_message.get('text')
+        # print(user_input)
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")
         query= f"""MATCH (p:Paintings)-->(i:Item) WHERE p.name="King Caspar" RETURN i.name, i.Description"""
-        # knownObjects = tracker.get_slot("known_objects")
-        # print(knownObjects)
-        # if knownObjects is None:
-        knownObjects=usefull.callDatabase(query)
+        knownObjects = tracker.get_slot("known_objects")
+        print(knownObjects)
         items=""
-        for record in knownObjects:
+        databaseObjects=usefull.callDatabase(query)
+        for record in databaseObjects:
             items = items + f"""\nItem: {record['i.name']}\nDescription: {record['i.Description']}"""
-        # else:
-        #     items=""
-        #     for item in knownObjects:
-        #         items = items + f"""\nItem: {item[0]}\nDescription: {item[1]}"""
-
         compare=""  
         if stage == "compare":
             last_active_painting = tracker.get_slot("last_active_painting")
-            favorite_painting = tracker.get_slot("favourite_painting")
+            # favorite_painting = tracker.get_slot("favourite_painting")
             compare = f"The paintings you want the user to compare are {active_painting}, {last_active_painting}."
 
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Do not describe the artwork, ask open-ended questions to guide the user through it.
+If the user tries to talk about another painting , gently guide them back to {active_painting}
 You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
 The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
-Here are some of the items in the painting: {items}
+Here are all the items in the painting: {items}
+If the user begins describing objects not in the above list ask them to focus on the items in the painting.
 {compare}
         """
-        # print(instructions)
         # Construct the history of conversation
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
 
         # API call
         
         openai_response = usefull.getAPIResponse(messages)
-        # for item in knownObjects:
-        #     if item['i.name'] in openai_response or item['i.name'] in messages:
-        #         del item['i.name']
-        print(f"{stage}")
+        
 
         dispatcher.utter_message(text=openai_response)
-        return [SlotSet('known_objects',  knownObjects)]
+        if knownObjects is None:
+            return [SlotSet('known_objects',  databaseObjects)]
+        elif len(knownObjects) == 0:
+            return [SlotSet('known_objects',  None)]
+        else:
+            del messages[0]
+            covered_items = usefull.check_chat_for_items(messages[-3:], [x[0] for x in knownObjects])
+            return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]
     
 
 class ActionSummarize(Action):
@@ -218,3 +221,24 @@ class usefull():
         except Exception as e:
             openai_response = f"Sorry, I encountered an error: {str(e)}"
         return openai_response
+    
+    def check_chat_for_items(chat, items, threshold=80):
+        """
+        Check if a chat contains items from a list with a specified similarity threshold.
+
+        :param chat: Dictionary representing the chat
+        :param items: List of items to check for in the chat
+        :param threshold: Similarity threshold for fuzzy matching (default is 80)
+        :return: Dictionary with chat keys and list of found items for each key
+        """
+
+        for message in chat:
+            content = message['content']
+            found_items = []
+            for item in items:
+                # Using fuzzy matching to find close matches
+                match_score = fuzz.partial_ratio(content.lower(), item.lower())
+                print(f"for {content} and {item} score:{match_score}")
+                if match_score >= threshold:
+                    found_items.append(item)
+        return found_items

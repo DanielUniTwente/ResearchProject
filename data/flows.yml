@@ -5,7 +5,7 @@ flows:
     #   - intent: "greet"
     steps:
       - action: "utter_greet"
-      - link: "test_database"
+      - link: "choose_painting"
     
   test_database:
     description: "Tests the database connection"
@@ -31,7 +31,7 @@ flows:
   #     - link: "observation"
 
   observation:
-    description: "User is asked to make an observation about their chosen painting, until they say they have no more observations to make"
+    description: "User is asked to make an observation about their chosen painting, until they have gone over all objects in the painting"
     if: "slots.active_painting"
     steps:
       - id: "set_stage"
@@ -47,7 +47,7 @@ flows:
         ask_before_filling: true
         utter: action_send_to_api
         next:
-          - if: "slots.no_more"
+          - if: "slots.known_objects is None"
             then: "no_more_observation"
           - else: "loop"
       # - id: "more_observation"
@@ -144,6 +144,8 @@ flows:
     description: "Summarizes the user's observations and feelings about the painting"
     if: "slots.active_painting"
     steps:
+      - set_slots:
+            - stage: "summary"
       - action: action_summarize
       - link: "next_painting"
 
@@ -154,15 +156,17 @@ flows:
       - id: "set_last_active_painting"
         last_active_painting: "active_painting"
         link: "choose_painting"
-
-  challenge_bot:
-    description: "Responds to the user's challenge about whether they are talking to a bot or a human"
+  
+  pattern_chitchat:
+    description: handle interactions with the user that are not task-oriented
+    name: pattern chitchat
     steps:
-      - action: "utter_iamabot"
-
-
-# ask_detail:
-  #   description: "Asks the user to provide more detail about their observation"
-  #   if: false
-  #   steps:
-  #     - collect: "detail"
+      - id: "choose response"
+        noop:
+          - if: "slots.challenge_ai"
+            action: "utter_iamabot"
+            set_slots:
+              - challenge_ai: False
+          - else: 
+            action: "utter_out_of_scope"
+  

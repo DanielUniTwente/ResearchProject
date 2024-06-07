@@ -13,6 +13,11 @@
 action_endpoint:
  url: "http://localhost:5055/webhook"
 
+# nlg:
+#   url: http://localhost:5055/nlg
+#   type: rasa_plus.ml.LLMResponseRephraser
+#   llm:
+#     model_name: gpt-3.5-turbo
 # Tracker store which is used to store the conversations.
 # By default the conversations are stored in memory.
 # https://rasa.com/docs/rasa/tracker-stores

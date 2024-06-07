@@ -6,7 +6,7 @@ intents:
 - deny
 - bot_challenge
 - observation
-- give_detail
+# - give_detail
 - choose_painting
 - describe_feelings
 - pick_favourite_painting
@@ -34,6 +34,7 @@ actions:
 # - utter_ask_next_painting
 # - utter_ask_initial_question
 - utter_ask_first_observation
+- utter_out_of_scope
 - action_test_database_access
 - action_send_to_api
 - action_summarize
@@ -99,7 +100,19 @@ slots:
     type: list
     # initial_value: None
     influence_conversation: false
+  challenge_bot:
+    type: bool
+    influence_conversation: false
+    initial_value: false
+    mappings:
+    - type: from_intent
+      value: true
+      intent: bot_challenge
 responses:
+  utter_no_knowledge_base:
+      - text: I am sorry, but I cannot help you with that.
+  utter_flow_continue_interrupted:
+  - text: "Next we will {{ context.previous_flow_name }}."
   utter_greet:
   - text: Hey!
   - text: Nice to meet you!
@@ -128,6 +141,10 @@ responses:
   # - text: What else do you see?
   utter_ask_first_observation:
   - text: What is going on here?
+  utter_out_of_scope:
+  - text: I am sorry, I am not able to help with that.
+    metadata:
+      rephrase: true
   # utter_ask_detail:
   # - text: Can you elaborate on that?
   # - text: Can you provide more details?
