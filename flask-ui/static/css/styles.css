@@ -1,4 +1,3 @@
-/* static/css/styles.css */
 
 body {
     font-family: Arial, sans-serif;
@@ -23,9 +22,9 @@ body {
     flex: 1;
     padding: 20px;
     box-sizing: border-box;
-    max-width: 100%; /* Set maximum width to 100% of its container */
-    max-height: 800px; /* Set maximum height to 300 pixels */
-    width: auto; /* Ensure image maintains its aspect ratio */
+    max-width: 100%; 
+    max-height: 800px; 
+    width: auto;
     height: auto; 
 }
 
@@ -58,12 +57,12 @@ body {
 
 .buttons-container {
     display: flex;
-    flex-direction: column; /* Ensure buttons stack vertically */
+    flex-direction: column; /* stack buttons vertically */
 }
 
 button {
     padding: 5px;
-    background-color: #007bff;
+    background-color: #53a6ee;
     color: white;
     border: none;
     border-radius: 4px;
@@ -73,7 +72,12 @@ button {
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #0475c1;
+}
+
+button:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
 }
 
 .image-container img {
@@ -96,7 +100,7 @@ button:hover {
     text-align: left;
     padding: 10px;
     margin: 5px 0;
-    background-color: #f8d7da;
+    background-color: #53a6ee;
     border-radius: 4px;
     align-self: flex-start;
     max-width: 70%;

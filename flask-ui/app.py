@@ -1,5 +1,3 @@
-# app.py
-
 from flask import Flask, render_template, request, jsonify
 import requests
 
@@ -13,7 +11,6 @@ def index():
 def send_message():
     user_message = request.json.get('message')
     response = requests.post('http://localhost:5005/webhooks/rest/webhook', json={"message": user_message})
-    # print(response.json())
     return jsonify(response.json())
 
 if __name__ == '__main__':

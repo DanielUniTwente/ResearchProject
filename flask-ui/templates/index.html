@@ -12,13 +12,27 @@
             <div id="chatbot"></div>
             <input type="text" id="userInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button onclick="sendMessage()">Send</button>
-            <button onclick="resetChat()">Reset</button> <!-- Add reset button -->
+            <button onclick="resetChat()">Reset</button>
         </div>
         <div class="image-container">
             <img src="{{ url_for('static', filename='images/default.jpg') }}" alt="Image" id="chatbot-image">
         </div>
     </div>
     <script>
+        // window.onload = function() {
+        //     fetch('/send_message', {
+        //         method: 'POST',
+        //         headers: { 'Content-Type': 'application/json' },
+        //         body: JSON.stringify({ message: '/restart' })
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         console.log('Chat reset successful');
+        //     })
+        //     .catch(error => {
+        //         console.error('Error resetting chat:', error);
+        //     });
+        // };
         const defaultImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
         const kingCasparImageUrl = "{{ url_for('static', filename='images/kingcaspar.jpeg') }}";
         const turbanBoyImageUrl = "{{ url_for('static', filename='images/headofboyinturban.jpeg') }}";

@@ -12,10 +12,9 @@ async function sendMessage() {
     userMessage.className = 'user-message';
     chatbotContainer.appendChild(userMessage);
 
-    // Clear the input field
-    document.getElementById('userInput').value = '';
+    document.getElementById('userInput').value = ''; //clear input field
 
-    // Send the message to the Flask server
+    // Send the message to rasa
     const response = await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -33,7 +32,6 @@ async function sendMessage() {
         }
 
         if (message.buttons) {
-            // Disable text input
             document.getElementById('userInput').disabled = true;
             const buttonsContainer = document.createElement('div');
             buttonsContainer.className = 'buttons-container';
@@ -42,9 +40,9 @@ async function sendMessage() {
                 const buttonElement = document.createElement('button');
                 buttonElement.textContent = button.title;
                 buttonElement.onclick = () => {
-                    disableButtons(buttonsContainer);
+                    disablePaintingButtons(buttonsContainer);
                     sendButtonMessage(button.payload);
-                    enableInput(); // Enable text input when button is clicked
+                    enableTextInput();
                 };
                 buttonsContainer.appendChild(buttonElement);
             });
@@ -60,7 +58,7 @@ async function sendButtonMessage(payload) {
     const chatbotContainer = document.getElementById('chatbot');
     const imageContainer = document.querySelector('.image-container img');
 
-    // Update image based on payload
+    // Update image based on choice
     switch (payload) {
         case 'King Caspar':
             imageContainer.src = kingCasparImageUrl;
@@ -78,13 +76,7 @@ async function sendButtonMessage(payload) {
             imageContainer.src = defaultImageUrl;
     }
 
-    // Add the button payload as a user message to the chat
-    const userMessage = document.createElement('div');
-    userMessage.textContent = payload;
-    userMessage.className = 'user-message';
-    chatbotContainer.appendChild(userMessage);
-
-    // Send the payload to the Flask server
+    // Send the painting to rasa
     const response = await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,13 +99,12 @@ async function sendButtonMessage(payload) {
 async function resetChat() {
     const chatbotContainer = document.getElementById('chatbot');
     const imageContainer = document.querySelector('.image-container img');
-    // Clear the chat history
-    chatbotContainer.innerHTML = '';
+    chatbotContainer.innerHTML = ''; //clear chatbox
 
-    // Reset the image to default
     imageContainer.src = defaultImageUrl;
-    enableInput(); // Enable text input when chat is reset
-    // Send the /restart command to Rasa server
+    enableTextInput();
+
+    // restart Rasa server
     await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -121,12 +112,11 @@ async function resetChat() {
     });
 }
 
-// Function to enable text input
-function enableInput() {
+function enableTextInput() {
     document.getElementById('userInput').disabled = false;
 }
 
-function disableButtons(container) {
+function disablePaintingButtons(container) {
     const buttons = container.querySelectorAll('button');
     buttons.forEach(button => {
         button.disabled = true;
