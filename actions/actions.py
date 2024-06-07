@@ -184,6 +184,26 @@ Here are some details genre and materials: {materials}
         dispatcher.utter_message(text=openai_response)
         return []
 
+class ActionSetImage(Action):
+    def name(self) -> Text:
+        return "action_set_image"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+       
+        active_painting = tracker.get_slot("active_painting")
+        if active_painting=="King Caspar":
+            image_url="flask-ui/static/images/kingcaspar.jpeg"
+        elif active_painting=="Head of a Boy in a Turban":
+            image_url="flask-ui/static/images/headofboyinturban.jpeg"
+        elif active_painting=="Diego Bemba, a Servant of Don Miguel de Castro":
+            image_url=""   
+        elif active_painting=="Pedro Sunda, a Servant of Don Miguel de Castro":
+            image_url=""
+        return [SlotSet("image_url", image_url)]
+
 class usefull():
     def constructPrompt(conversation_history, active_painting, instructions):
         current_painting = None

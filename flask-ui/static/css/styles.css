@@ -1,0 +1,105 @@
+/* static/css/styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f4f4f4;
+}
+
+.container {
+    display: flex;
+    border: 1px solid #ccc;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    width: 80%;
+    max-width: 900px;
+    height: 500px;
+}
+
+.chat-container, .image-container {
+    flex: 1;
+    padding: 20px;
+    box-sizing: border-box;
+    max-width: 100%; /* Set maximum width to 100% of its container */
+    max-height: 800px; /* Set maximum height to 300 pixels */
+    width: auto; /* Ensure image maintains its aspect ratio */
+    height: auto; 
+}
+
+
+
+.chat-container {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid #ccc;
+}
+
+#chatbot {
+    flex: 1;
+    overflow-y: auto;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    padding: 10px;
+    background-color: #fff;
+}
+
+#userInput {
+    width: calc(100% - 50px);
+    padding: 10px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    margin-bottom: 5px;
+}
+
+.buttons-container {
+    display: flex;
+    flex-direction: column; /* Ensure buttons stack vertically */
+}
+
+button {
+    padding: 5px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-bottom: 5px;
+    width: 40%;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.image-container img {
+    width: 100%;
+    height: auto;
+}
+
+.user-message {
+    text-align: right;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #d1e7dd;
+    border-radius: 4px;
+    align-self: flex-end;
+    max-width: 70%;
+    margin-left: auto;
+}
+
+.bot-message {
+    text-align: left;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: #f8d7da;
+    border-radius: 4px;
+    align-self: flex-start;
+    max-width: 70%;
+    margin-right: auto;
+}
+

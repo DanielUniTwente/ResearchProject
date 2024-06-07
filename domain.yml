@@ -39,12 +39,16 @@ actions:
 - action_send_to_api
 - action_summarize
 - action_author_technique_api
+- action_set_image
 
 entities:
 - favourite_painting
 - active_painting
 - current_feeling
 slots:
+  image_url:
+    type: text
+    influence_conversation: false
   stage:
     type: text
     influence_conversation: false

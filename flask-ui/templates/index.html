@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rasa Chatbot</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="chat-container">
+            <div id="chatbot"></div>
+            <input type="text" id="userInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
+            <button onclick="sendMessage()">Send</button>
+            <button onclick="resetChat()">Reset</button> <!-- Add reset button -->
+        </div>
+        <div class="image-container">
+            <img src="{{ url_for('static', filename='images/default.jpg') }}" alt="Image" id="chatbot-image">
+        </div>
+    </div>
+    <script>
+        const defaultImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
+        const kingCasparImageUrl = "{{ url_for('static', filename='images/kingcaspar.jpeg') }}";
+        const turbanBoyImageUrl = "{{ url_for('static', filename='images/headofboyinturban.jpeg') }}";
+        const diegoBembaImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
+        const pedroSundaImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

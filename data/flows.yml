@@ -21,6 +21,8 @@ flows:
       - collect: "active_painting"
         ask_before_filling: true
         reset_after_flow_ends: false
+      - set_slots:
+          - image_url: active_painting
       - link: "observation"
 
   # initial_question:

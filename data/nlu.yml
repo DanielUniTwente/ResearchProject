@@ -71,7 +71,7 @@ nlu:
 
 - intent: choose_painting
   examples: |
-    - Koning Casper
+    - King Casper
     - Head of a Boy in a Turban
     - Portrait of Diego Bemba
     - Portrait of Pedro Sunda
