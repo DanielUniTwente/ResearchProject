@@ -24,7 +24,8 @@ from transformers import pipeline
 URI = "bolt://localhost:7687"
 AUTH = ("neo4j", "53ds!6g81ds8nmD_F74982FH89D7ds54gSD")
 openai.api_key = os.getenv("OPENAI_API_KEY")
-    
+emotion_classifier = pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base', return_all_scores=True)
+
 class ActionSendToAPI(Action):
     def name(self) -> Text:
         return "action_send_to_api"
