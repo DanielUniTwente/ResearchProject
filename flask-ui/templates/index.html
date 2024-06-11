@@ -13,6 +13,7 @@
             <input type="text" id="userInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
             <button onclick="sendMessage()">Send</button>
             <button onclick="resetChat()">Reset</button>
+            <button onclick="downloadLog()">Download Log</button>
         </div>
         <div class="image-container">
             <img src="{{ url_for('static', filename='images/default.jpg') }}" alt="Image" id="chatbot-image">
@@ -40,5 +41,7 @@
         const pedroSundaImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/html2json"></script>
 </body>
 </html>

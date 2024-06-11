@@ -122,3 +122,9 @@ function disablePaintingButtons(container) {
         button.disabled = true;
     });
 }
+
+function downloadLog() {
+    chat=document.getElementById('chatbot')
+    const blob = new Blob([chat.innerHTML], { type: 'text/plain;charset=utf-8' });
+    saveAs(blob, 'chatbot.log');
+}
