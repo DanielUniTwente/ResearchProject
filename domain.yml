@@ -40,6 +40,8 @@ actions:
 - action_summarize
 - action_author_technique_api
 - action_set_image
+- action_feelings_api
+- action_send_feelings_to_database
 
 entities:
 - favourite_painting
@@ -69,9 +71,9 @@ slots:
   current_feeling:
     type: text
     influence_conversation: false
-    mappings:
-    - type: from_entity
-      entity: current_feeling
+    # mappings:
+    # - type: from_entity
+    #   entity: current_feeling
   last_active_painting:
     type: text
     influence_conversation: false

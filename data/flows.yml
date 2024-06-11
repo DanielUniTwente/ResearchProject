@@ -23,7 +23,7 @@ flows:
         reset_after_flow_ends: false
       - set_slots:
           - image_url: active_painting
-      - link: "observation"
+      - link: "describe_feelings"
 
   # initial_question:
   #   description: "Asks the user the initial question about the painting"
@@ -109,18 +109,13 @@ flows:
       - id: "set_stage"
         set_slots:
           - stage: "describe feelings"
-        next: "loop"
-      - id: "loop"
+        next: "ask_feelings"
+      - id: "ask_feelings"
         collect: "current_feeling"
         ask_before_filling: true
-        utter: action_send_to_api
-        next:
-          - if: "slots.no_more"
-            then: "no_more_observation"
-          - else: "loop"
-      - id: "no_more_observation"
-        observation: "empty"
-        link: "compare_painting"
+        reset_after_flow_ends: false
+        utter: action_feelings_api
+      - link: "next_painting"
 
   compare_painting:
     description: "Asks the user to compare their chosen painting to the last painting"
@@ -156,8 +151,12 @@ flows:
     if: "slots.active_painting"
     steps:
       - id: "set_last_active_painting"
-        last_active_painting: "active_painting"
-        link: "choose_painting"
+        set_slots:
+          - last_active_painting: "active_painting"
+        next: "send_feelings_to_database"
+      - id: "send_feelings_to_database"
+        action: "action_send_feelings_to_database"
+      - link: "choose_painting"
   
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented

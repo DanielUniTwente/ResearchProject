@@ -18,46 +18,12 @@ import openai
 
 from fuzzywuzzy import fuzz
 from fuzzywuzzy import process
+from transformers import pipeline
 
-# load_status = dotenv.load_dotenv("actions/Neo4j-5775be33-Created-2024-05-27.txt")
-# if load_status is False:
-#     raise RuntimeError('Environment variables not loaded.')
-
-# URI = os.getenv("NEO4J_URI")
-# AUTH = (os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
+# Load a pre-trained emotion analysis pipeline
 URI = "bolt://localhost:7687"
 AUTH = ("neo4j", "53ds!6g81ds8nmD_F74982FH89D7ds54gSD")
 openai.api_key = os.getenv("OPENAI_API_KEY")
-
-class ActionTestDatabaseAccess(Action):
-    def name(self) -> Text:
-        return "action_test_database_access"
-
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-
-        with GraphDatabase.driver(URI, auth=AUTH) as driver:
-            driver.verify_connectivity()
-            records, summary, keys = driver.execute_query(
-                """
-                MATCH (n) WHERE (n.name) IS NOT NULL 
-                RETURN DISTINCT "node" as entity, n.name AS name LIMIT 25 
-                UNION ALL 
-                MATCH ()-[r]-() WHERE (r.name) IS NOT NULL 
-                RETURN DISTINCT "relationship" AS entity, r.name AS name LIMIT 25
-                """,
-                database_="neo4j",
-            )
-            # Loop through results and do something with them
-            for record in records:
-                print(record.data())  # obtain record as dict
-            # Summary information
-            print("The query `{query}` returned {records_count} records in {time} ms.".format(
-                query=summary.query, records_count=len(records),
-                time=summary.result_available_after
-            ))       
-        return []
     
 class ActionSendToAPI(Action):
     def name(self) -> Text:
@@ -72,13 +38,12 @@ class ActionSendToAPI(Action):
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")
-        query= f"""MATCH (p:Paintings)-->(i:Item) WHERE p.name="King Caspar" RETURN i.name, i.Description"""
+        query= f"""MATCH (p:Paintings)-->(i:Item) WHERE p.name="{active_painting}" RETURN i.name AS name, i.Description AS description"""
         knownObjects = tracker.get_slot("known_objects")
-        print(knownObjects)
         items=""
         databaseObjects=usefull.callDatabase(query)
         for record in databaseObjects:
-            items = items + f"""\nItem: {record['i.name']}\nDescription: {record['i.Description']}"""
+            items = items + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
         compare=""  
         if stage == "compare":
             last_active_painting = tracker.get_slot("last_active_painting")
@@ -94,27 +59,114 @@ You want to do this in 5 stages: observation, describe story, describe author te
 The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
 Here are all the items in the painting: {items}
 If the user begins describing objects not in the above list ask them to focus on the items in the painting.
-{compare}
+{compare}"""
+        messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
+        openai_response = usefull.getAPIResponse(messages)
+        dispatcher.utter_message(text=openai_response)
+        # print(knownObjects)
+        if knownObjects is None:
+            return [SlotSet('known_objects',  databaseObjects)]
+        elif len(knownObjects) < len(databaseObjects)*(30/100):
+            return [SlotSet('known_objects',  None)]
+        else:
+            del messages[0]
+            covered_items = usefull.check_chat_for_items(messages[-3:], knownObjects)
+            return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]  
+
+class ActionAuthorTechnique(Action):    
+    def name(self) -> Text:
+        return "action_author_technique_api"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        
+        # user_input = tracker.latest_message.get('text')
+        conversation_history = tracker.events
+        active_painting = tracker.get_slot("active_painting")
+        stage = tracker.get_slot("stage")
+        
+        query = f"""MATCH (g:Genre)<--(n:Paintings)-[on_MATERIAL]->(m:Material)
+                    WHERE n.name = "{active_painting}"
+                    UNWIND [[m.name, m.description], [g.name, g.description]] AS item
+                    RETURN item[0] AS name, item[1] AS description"""
+        materialsAndGenres=""
+        databaseObjects=usefull.callDatabase(query)
+        for record in databaseObjects:
+            materialsAndGenres= materialsAndGenres + f"""\nMaterial: {record['m.name']}\nDescription: {record['m.description']}
+Genre: {record['g.name']}\nDescription: {record['g.description']}"""
+            
+        instructions = f"""
+You are a tour guide trained in Visual Thinking Strategies (VTS). 
+You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
+You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
+The current stage is {stage}. Do not go to other stages. Ask open-ended questions to guide the user. Vary the beginnings of your responses.
+You may describe the techniques if the user is having trouble perceiving or identifying them.
+Here are some details genre and materials: {materialsAndGenres}
         """
+        print(instructions)
         # Construct the history of conversation
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
 
         # API call
-        
         openai_response = usefull.getAPIResponse(messages)
-        
+        print(f"{stage}")
 
         dispatcher.utter_message(text=openai_response)
-        if knownObjects is None:
+        print(materialsAndGenres)
+        if materialsAndGenres is None:
             return [SlotSet('known_objects',  databaseObjects)]
-        elif len(knownObjects) == 0:
+        elif len(materialsAndGenres) < len(databaseObjects)*(30/100):
             return [SlotSet('known_objects',  None)]
         else:
             del messages[0]
-            covered_items = usefull.check_chat_for_items(messages[-3:], [x[0] for x in knownObjects])
-            return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]
-    
+            covered_items = usefull.check_chat_for_items(messages[-3:], materialsAndGenres)
+            return [SlotSet('known_objects', [t for t in materialsAndGenres if t[0] not in covered_items])]
+        
+class ActionFeelings(Action):
+    def name(self) -> Text:
+        return "action_feelings_api"
 
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+
+        # user_input = tracker.latest_message.get('text')
+        conversation_history = tracker.events
+        active_painting = tracker.get_slot("active_painting")
+        stage = tracker.get_slot("stage")
+        instructions = f"""
+You are a tour guide trained in Visual Thinking Strategies (VTS). 
+You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
+You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
+The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
+If the user tries to talk about another painting , gently guide them back to {active_painting}
+Do not describe the artwork, prompt the user to give their opinion.
+"""
+        messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
+        openai_response = usefull.getAPIResponse(messages)
+        dispatcher.utter_message(text=openai_response)
+        return[]
+
+class ActionSendFeelingsToDatabase(Action):
+    def name(self) -> Text:
+        return "action_send_feelings_to_database"
+
+    def run(self, dispatcher: CollectingDispatcher,
+            tracker: Tracker,
+            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
+        feeling = usefull.extract_emotion(tracker.get_slot("current_feeling"))
+        query = f"""
+                MATCH (n:Paintings) 
+                WHERE n.name="{tracker.get_slot("active_painting")}" 
+                SET n.feelings= CASE
+                    WHEN '{feeling}' IN coalesce(n.feelings, []) THEN n.feelings
+                    ELSE n.feelings + '{feeling}'
+                END
+                """
+        usefull.callDatabase(query)
+        return []
+    
 class ActionSummarize(Action):
     def name(self) -> Text:
         return "action_summarize"
@@ -142,68 +194,8 @@ Use the information from the conversation and this description of the artwork:{d
         
         dispatcher.utter_message(text=openai_response)
 
-        return []   
-
-class ActionAuthorTechnique(Action):    
-    def name(self) -> Text:
-        return "action_author_technique_api"
-
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        
-        # user_input = tracker.latest_message.get('text')
-        conversation_history = tracker.events
-        active_painting = tracker.get_slot("active_painting")
-        stage = tracker.get_slot("stage")
-        
-        query = f"""MATCH (g:Genre)<--(n:Paintings)-[on_MATERIAL]->(m:Material) 
-                    WHERE n.name="King Caspar" 
-                    RETURN m.name ,m.description,g.name,g.description"""
-        materials=""
-        for record in usefull.callDatabase(query):
-            materials= materials + f"""\nMaterial: {record['m.name']}\nDescription: {record['m.description']}
-Genre: {record['g.name']}\nDescription: {record['g.description']}"""
-            
-        instructions = f"""
-You are a tour guide trained in Visual Thinking Strategies (VTS). 
-You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
-You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
-The current stage is {stage}. Do not go to other stages. Ask open-ended questions to guide the user. Vary the beginnings of your responses.
-You may describe the techniques if the user is having trouble perceiving or identifying them.
-Here are some details genre and materials: {materials}
-        """
-        print(instructions)
-        # Construct the history of conversation
-        messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
-
-        # API call
-        openai_response = usefull.getAPIResponse(messages)
-        print(f"{stage}")
-
-        dispatcher.utter_message(text=openai_response)
-        return []
-
-class ActionSetImage(Action):
-    def name(self) -> Text:
-        return "action_set_image"
-
-    def run(self, dispatcher: CollectingDispatcher,
-            tracker: Tracker,
-            domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        
-       
-        active_painting = tracker.get_slot("active_painting")
-        if active_painting=="King Caspar":
-            image_url="flask-ui/static/images/kingcaspar.jpeg"
-        elif active_painting=="Head of a Boy in a Turban":
-            image_url="flask-ui/static/images/headofboyinturban.jpeg"
-        elif active_painting=="Diego Bemba, a Servant of Don Miguel de Castro":
-            image_url=""   
-        elif active_painting=="Pedro Sunda, a Servant of Don Miguel de Castro":
-            image_url=""
-        return [SlotSet("image_url", image_url)]
-
+        return [] 
+    
 class usefull():
     def constructPrompt(conversation_history, active_painting, instructions):
         current_painting = None
@@ -230,7 +222,7 @@ class usefull():
     def getAPIResponse(messages):
         try:
             response = openai.ChatCompletion.create(
-                model="gpt-3.5-turbo-0301",
+                model="gpt-3.5-turbo",
                 messages=messages,
                 max_tokens=150,
                 n=1,
@@ -243,22 +235,18 @@ class usefull():
         return openai_response
     
     def check_chat_for_items(chat, items, threshold=80):
-        """
-        Check if a chat contains items from a list with a specified similarity threshold.
-
-        :param chat: Dictionary representing the chat
-        :param items: List of items to check for in the chat
-        :param threshold: Similarity threshold for fuzzy matching (default is 80)
-        :return: Dictionary with chat keys and list of found items for each key
-        """
-
         for message in chat:
             content = message['content']
             found_items = []
-            for item in items:
-                # Using fuzzy matching to find close matches
-                match_score = fuzz.partial_ratio(content.lower(), item.lower())
-                print(f"for {content} and {item} score:{match_score}")
-                if match_score >= threshold:
-                    found_items.append(item)
+            for name, description in items:
+                name_match_score = fuzz.partial_ratio(content.lower(), name.lower())
+                # description_match_score = fuzz.partial_ratio(content.lower(), description.lower())
+                if name_match_score >= threshold:#or description_match_score>=threshold 
+                    found_items.append(name)
         return found_items
+    
+    def extract_emotion(text):
+        predictions = emotion_classifier(text)
+        emotions = {pred['label']: pred['score'] for pred in predictions[0]}
+        primary_emotion = max(emotions, key=emotions.get)
+        return primary_emotion
