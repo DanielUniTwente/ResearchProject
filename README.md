@@ -11,9 +11,8 @@
 ### Setup
 * Rasa
 
-    To set up rasa we will make 2 environmental variable
+    To set up rasa make 1 environmental variable
     1. OPENAI_API_KEY that contains your API key
-    2. RASA_PRO_BETA_LLM_INTENT to use the LLM intent classifier(might remove)
 
 * Neo4j
 
@@ -25,11 +24,11 @@
 ### Usage
 To start rasa run this command in terminal.
 
-    `rasa run`
+    rasa run
 
-Additionally you will have to run the rasa custom action server to execute custom actions with this in command in another terminal
+To run the rasa custom action server, which allows execution of custom actions run this command in a different terminal
 
-    `rasa run actions`
+    rasa run actions
 
 To start the UI run the app.py file and go to the specified address
 

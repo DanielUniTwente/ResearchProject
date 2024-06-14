@@ -49,14 +49,17 @@ async function sendMessage() {
             chatbotContainer.appendChild(buttonsContainer);
         }
     });
-
-    // Scroll to the bottom of the chat
     chatbotContainer.scrollTop = chatbotContainer.scrollHeight;
 }
 
 async function sendButtonMessage(payload) {
     const chatbotContainer = document.getElementById('chatbot');
     const imageContainer = document.querySelector('.image-container img');
+
+    const userMessage = document.createElement('div');
+    userMessage.textContent = payload;
+    userMessage.className = 'user-message';
+    chatbotContainer.appendChild(userMessage);
 
     // Update image based on choice
     switch (payload) {
@@ -91,8 +94,6 @@ async function sendButtonMessage(payload) {
         botMessage.className = 'bot-message';
         chatbotContainer.appendChild(botMessage);
     });
-
-    // Scroll to the bottom of the chat
     chatbotContainer.scrollTop = chatbotContainer.scrollHeight;
 }
 
@@ -125,6 +126,31 @@ function disablePaintingButtons(container) {
 
 function downloadLog() {
     chat=document.getElementById('chatbot')
-    const blob = new Blob([chat.innerHTML], { type: 'text/plain;charset=utf-8' });
+    const jsonChat = JSON.stringify(htmlToJson(chat.innerHTML), null, 2);
+    const blob = new Blob([jsonChat], { type: 'text/plain;charset=utf-8' });
     saveAs(blob, 'chatbot.log');
+}
+
+function htmlToJson(htmlContent) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(htmlContent, 'text/html');
+    const result = [];
+    const divs = doc.querySelectorAll('div');
+    divs.forEach(div => {
+        const className = div.className;
+        if (className === 'user-message' || className === 'bot-message') {
+            result.push({
+                type: className,
+                content: div.textContent.trim()
+            });
+        } else if (className === 'buttons-container') {
+            const buttons = Array.from(div.querySelectorAll('button')).map(button => button.textContent.trim());
+            result.push({
+                type: className,
+                buttons: buttons
+            });
+        }
+    });
+
+    return result;
 }

@@ -23,7 +23,7 @@ flows:
         reset_after_flow_ends: false
       - set_slots:
           - image_url: active_painting
-      - link: "describe_feelings"
+      - link: "observation"
 
   # initial_question:
   #   description: "Asks the user the initial question about the painting"
@@ -52,12 +52,6 @@ flows:
           - if: "slots.known_objects is None"
             then: "no_more_observation"
           - else: "loop"
-      # - id: "more_observation"
-      #   action: "utter_commend_observation"
-      #   next: "detail"
-      # - id: "detail"
-      #   call: ask_detail
-      #   next: "loop"
       - id: "no_more_observation"
         observation: "empty"
         link: "describe_story"
@@ -75,7 +69,7 @@ flows:
         ask_before_filling: true
         utter: action_send_to_api
         next:
-          - if: "slots.no_more"
+          - if: "slots.known_objects is None"
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
@@ -95,7 +89,7 @@ flows:
         ask_before_filling: true
         utter: action_author_technique_api
         next:
-          - if: "slots.no_more"
+          - if: "slots.known_objects is None"
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"

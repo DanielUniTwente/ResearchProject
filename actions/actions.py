@@ -15,16 +15,22 @@ from rasa_sdk.events import SlotSet
 import dotenv
 import os
 import openai
-
 from fuzzywuzzy import fuzz
-from fuzzywuzzy import process
 from transformers import pipeline
-
+from string import punctuation
+import re
+from nltk.stem import PorterStemmer
+from nltk.corpus import stopwords
+import nltk
 # Load a pre-trained emotion analysis pipeline
 URI = "bolt://localhost:7687"
 AUTH = ("neo4j", "53ds!6g81ds8nmD_F74982FH89D7ds54gSD")
 openai.api_key = os.getenv("OPENAI_API_KEY")
 emotion_classifier = pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base', return_all_scores=True)
+
+nltk.download('stopwords')
+stemmer = PorterStemmer()
+stop_words = set(stopwords.words('english'))
 
 class ActionSendToAPI(Action):
     def name(self) -> Text:
@@ -39,7 +45,9 @@ class ActionSendToAPI(Action):
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")
-        query= f"""MATCH (p:Paintings)-->(i:Item) WHERE p.name="{active_painting}" RETURN i.name AS name, i.Description AS description"""
+        query = f"""MATCH (p:Paintings)-->(i:Item) 
+                    WHERE p.name="{active_painting}" 
+                    RETURN i.name AS name, i.Description AS description"""
         knownObjects = tracker.get_slot("known_objects")
         items=""
         databaseObjects=usefull.callDatabase(query)
@@ -56,22 +64,26 @@ You are a tour guide trained in Visual Thinking Strategies (VTS).
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Do not describe the artwork, ask open-ended questions to guide the user through it.
 If the user tries to talk about another painting , gently guide them back to {active_painting}
-You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
-The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
+You want to do this in 5 stages. The current stage is {stage}. Vary the beginnings of your responses.
 Here are all the items in the painting: {items}
 If the user begins describing objects not in the above list ask them to focus on the items in the painting.
+If the user is struggling to perceive or identify an item, you may describe it.
 {compare}"""
+        
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
-        # print(knownObjects)
+        print(stage)
+        # remove mentioned items from knownObjects
         if knownObjects is None:
             return [SlotSet('known_objects',  databaseObjects)]
-        elif len(knownObjects) < len(databaseObjects)*(30/100):
+        elif len(knownObjects) < len(databaseObjects)*(50/100):
+            print("we should transition to the next stage")
             return [SlotSet('known_objects',  None)]
         else:
             del messages[0]
             covered_items = usefull.check_chat_for_items(messages[-3:], knownObjects)
+            print([t for t in knownObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]  
 
 class ActionAuthorTechnique(Action):    
@@ -100,21 +112,17 @@ Genre: {record['g.name']}\nDescription: {record['g.description']}"""
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
-You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
-The current stage is {stage}. Do not go to other stages. Ask open-ended questions to guide the user. Vary the beginnings of your responses.
+You want to do this in 5 stages. The current stage is {stage}. 
+Ask open-ended questions to guide the user. Vary the beginnings of your responses.
 You may describe the techniques if the user is having trouble perceiving or identifying them.
 Here are some details genre and materials: {materialsAndGenres}
         """
-        print(instructions)
-        # Construct the history of conversation
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
-
-        # API call
         openai_response = usefull.getAPIResponse(messages)
         print(f"{stage}")
-
         dispatcher.utter_message(text=openai_response)
-        print(materialsAndGenres)
+
+        # remove mentioned entries from knownObjects
         if materialsAndGenres is None:
             return [SlotSet('known_objects',  databaseObjects)]
         elif len(materialsAndGenres) < len(databaseObjects)*(30/100):
@@ -139,8 +147,7 @@ class ActionFeelings(Action):
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
-You want to do this in 5 stages: observation, describe story, describe author technique, describe feelings and compare.
-The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
+You want to do this in 5 stages. The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
 If the user tries to talk about another painting , gently guide them back to {active_painting}
 Do not describe the artwork, prompt the user to give their opinion.
 """
@@ -188,13 +195,8 @@ Summarize the conversation regarding the painting {active_painting} in no more t
 Use the information from the conversation and this description of the artwork:{description} 
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
-        print(messages)
-
-        # API call
         openai_response = usefull.getAPIResponse(messages)
-        
         dispatcher.utter_message(text=openai_response)
-
         return [] 
     
 class usefull():
@@ -235,15 +237,32 @@ class usefull():
             openai_response = f"Sorry, I encountered an error: {str(e)}"
         return openai_response
     
+    def preprocess_text(text):
+        text = text.lower()
+        text = re.sub(r"['’]", "", text)
+        text = re.sub(r"[-_]", " ", text)
+        text = text.translate(str.maketrans("", "", punctuation))
+        text = re.sub(r"\s+", " ", text).strip()
+        words = text.split()
+        words = [word for word in words if word not in stop_words]
+        stemmed_words = [stemmer.stem(word) for word in words]
+        preprocessed_text = " ".join(stemmed_words)
+        return preprocessed_text
+
     def check_chat_for_items(chat, items, threshold=80):
+        found_items = []
         for message in chat:
-            content = message['content']
-            found_items = []
+            content = usefull.preprocess_text(message['content'])
             for name, description in items:
-                name_match_score = fuzz.partial_ratio(content.lower(), name.lower())
-                # description_match_score = fuzz.partial_ratio(content.lower(), description.lower())
-                if name_match_score >= threshold:#or description_match_score>=threshold 
+                processed_name = usefull.preprocess_text(name)
+                name_match_score = fuzz.token_set_ratio(content, processed_name)
+                description_match_score = 0
+                if description is not None:
+                    description = usefull.preprocess_text(description)
+                    description_match_score = fuzz.token_set_ratio(content, description)
+                if name_match_score >= threshold or description_match_score >= threshold:
                     found_items.append(name)
+                    print(f"Found item: {name}")
         return found_items
     
     def extract_emotion(text):

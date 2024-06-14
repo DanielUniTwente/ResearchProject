@@ -11,9 +11,11 @@
         <div class="chat-container">
             <div id="chatbot"></div>
             <input type="text" id="userInput" placeholder="Type a message..." onkeypress="if(event.key === 'Enter') sendMessage()">
-            <button onclick="sendMessage()">Send</button>
-            <button onclick="resetChat()">Reset</button>
-            <button onclick="downloadLog()">Download Log</button>
+            <div class="bottom-buttons">
+                <button onclick="sendMessage()" class="bottom-button">Send</button>
+                <button onclick="resetChat()" class="bottom-button">Reset</button>
+                <button onclick="downloadLog()" class="bottom-button">Download Log</button>
+            </div>
         </div>
         <div class="image-container">
             <img src="{{ url_for('static', filename='images/default.jpg') }}" alt="Image" id="chatbot-image">

@@ -9,10 +9,10 @@ intents:
 # - give_detail
 - choose_painting
 - describe_feelings
-- pick_favourite_painting
-- reason_favorite_painting
-- stop
-- chitchat
+# - pick_favourite_painting
+# - reason_favorite_painting
+# - chitchat
+- struggle
 
 actions:
 - utter_greet
