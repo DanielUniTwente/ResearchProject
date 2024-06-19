@@ -3,22 +3,24 @@
 # Instalation
 ### Prerequisites
         python 3.9.x
-        rasa plus version 3.8.x
+        rasa pro/plus version 3.8.x
+        openai
         neo4j 
         flask 
         fuzzywuzzy
         dotenv
+        ntlk
 ### Setup
 * Rasa
 
-    To set up rasa make 1 environmental variable
+    To set up rasa make the following environmental variable
     1. OPENAI_API_KEY that contains your API key
 
 * Neo4j
 
-    To setup a connection to a Neo4j DBMS you have to assign three variable in the action.py
+    To setup a connection to a Neo4j DBMS you have to assign three variable in the databaseCredentials.txt file
     1. URI - to the address your DBMS is hosted
-    2. USERNAME - the username with which you will access the database
+    2. USERNAME - the username with which you will access the
     3. PASSWORD - the password that allows you access
 
 ### Usage

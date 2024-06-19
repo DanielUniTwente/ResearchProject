@@ -3,36 +3,19 @@ intents:
 - greet
 - goodbye
 - affirm
-- deny
+# - end_of_comparison
 - bot_challenge
 - observation
-# - give_detail
 - choose_painting
 - describe_feelings
-# - pick_favourite_painting
-# - reason_favorite_painting
-# - chitchat
 - struggle
+- end_of_interpertation
 
 actions:
 - utter_greet
 - utter_goodbye
 - utter_iamabot
 - utter_ask_active_painting
-# - utter_ask_observation
-# - utter_ask_detail
-# - utter_commend_observation
-# - utter_ask_feelings
-# - utter_explain_feelings
-# - utter_look_closer
-# - utter_ask_interpretation
-# - utter_compare_active_favourite
-# - utter_compare_last_active
-# - utter_ask_favourite_painting
-# - utter_brigde_prompts 
-# - utter_stop
-# - utter_ask_next_painting
-# - utter_ask_initial_question
 - utter_ask_first_observation
 - utter_out_of_scope
 - action_test_database_access
@@ -40,8 +23,8 @@ actions:
 - action_summarize
 - action_author_technique_api
 - action_set_image
-- action_feelings_api
-- action_send_feelings_to_database
+- action_interpretation_api
+- action_send_interpretation_to_database
 
 entities:
 - favourite_painting
@@ -60,7 +43,6 @@ slots:
     mappings:
     - type: from_text
       intent: choose_painting
-      # role: active_painting
   favourite_painting:
     type: text
     influence_conversation: false
@@ -68,37 +50,37 @@ slots:
     mappings:
     - type: from_entity
       entity: favourite_painting
-  current_feeling:
+  current_interpretation:
     type: text
     influence_conversation: false
-    # mappings:
-    # - type: from_entity
-    #   entity: current_feeling
   last_active_painting:
     type: text
     influence_conversation: false
     mappings:
     - type: custom
-  # detail:
-  #   type: text
-  #   influence_conversation: false
-  #   mappings:
-  #   - type: from_text
-  #     intent: give_detail
   observation:
     type: text
     influence_conversation: false
     mappings:
     - type: from_text
       intent: observation
+  no_objects:
+    type: bool
+    influence_conversation: false
+    initial_value: false
+    mappings:
+    - type: custom
   no_more:
     type: bool
     influence_conversation: false
     initial_value: false
     mappings:
+    # - type: from_intent
+    #   value: true
+    #   intent: end_of_comparison
     - type: from_intent
       value: true
-      intent: deny
+      intent: end_of_interpertation
   author_technique:
     type: text
     influence_conversation: false
@@ -115,10 +97,13 @@ slots:
       value: true
       intent: bot_challenge
 responses:
+  utter_lets_move_on:
+  - text: Let's move on to the next painting.
+  - text: Ok let's look at some other paintings.
   utter_no_knowledge_base:
-      - text: I am sorry, but I cannot help you with that.
+  - text: I am sorry, but I cannot help you with that.
   utter_flow_continue_interrupted:
-  - text: "Next we will {{ context.previous_flow_name }}."
+  - text: ""
   utter_greet:
   - text: Hey!
   - text: Nice to meet you!
@@ -148,7 +133,7 @@ responses:
   utter_ask_first_observation:
   - text: What is going on here?
   utter_out_of_scope:
-  - text: I am sorry, I am not able to help with that.
+  - text: I am sorry, I can not help you with that.
     metadata:
       rephrase: true
   # utter_ask_detail:

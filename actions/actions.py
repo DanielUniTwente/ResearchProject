@@ -15,22 +15,25 @@ from rasa_sdk.events import SlotSet
 import dotenv
 import os
 import openai
-from fuzzywuzzy import fuzz
-from transformers import pipeline
-from string import punctuation
-import re
-from nltk.stem import PorterStemmer
-from nltk.corpus import stopwords
-import nltk
+# from nltk.stem import PorterStemmer
+# from nltk.corpus import stopwords
+# import nltk
+import spacy
+from scipy.spatial.distance import cosine
+nlp = spacy.load('en_core_web_md')
 # Load a pre-trained emotion analysis pipeline
-URI = "bolt://localhost:7687"
-AUTH = ("neo4j", "53ds!6g81ds8nmD_F74982FH89D7ds54gSD")
-openai.api_key = os.getenv("OPENAI_API_KEY")
-emotion_classifier = pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base', return_all_scores=True)
+load_status = dotenv.load_dotenv("actions/databaseCredentials.txt")
+if load_status is False:
+    raise RuntimeError('Environment variables not loaded.')
 
-nltk.download('stopwords')
-stemmer = PorterStemmer()
-stop_words = set(stopwords.words('english'))
+URI = os.getenv("NEO4J_URI")
+AUTH = (os.getenv("NEO4J_USERNAME"), os.getenv("NEO4J_PASSWORD"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
+# emotion_classifier = pipeline('text-classification', model='j-hartmann/emotion-english-distilroberta-base', return_all_scores=True)
+
+# nltk.download('stopwords')
+# stemmer = PorterStemmer()
+# stop_words = set(stopwords.words('english'))
 
 class ActionSendToAPI(Action):
     def name(self) -> Text:
@@ -45,31 +48,32 @@ class ActionSendToAPI(Action):
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")
-        query = f"""MATCH (p:Paintings)-->(i:Item) 
+        query = f"""MATCH (c:Content)<--(p:Paintings)-->(i:Item) 
                     WHERE p.name="{active_painting}" 
-                    RETURN i.name AS name, i.Description AS description"""
+                    UNWIND [[i.name, i.Description], [c.name, c.description]] AS item
+                    RETURN DISTINCT item[0] AS name, item[1] AS description"""
         knownObjects = tracker.get_slot("known_objects")
         items=""
+        compare="" 
         databaseObjects=usefull.callDatabase(query)
-        for record in databaseObjects:
-            items = items + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
-        compare=""  
-        if stage == "compare":
-            last_active_painting = tracker.get_slot("last_active_painting")
-            # favorite_painting = tracker.get_slot("favourite_painting")
-            compare = f"The paintings you want the user to compare are {active_painting}, {last_active_painting}."
-
+        if stage == "observation" or stage == "describe story":
+            items="Here are all the items in the painting:"
+            for record in databaseObjects:
+                items = items + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
+            items = items + "\nIf the user begins describing objects not in the above list prompt them with one of them.\nIf the user is struggling to perceive or identify an item, you may describe it."
+        # elif stage == "compare":
+        #     last_active_painting = tracker.get_slot("last_active_painting")
+        #     # favorite_painting = tracker.get_slot("favourite_painting")
+        #     compare = f"The paintings you want the user to compare are {active_painting}, Head of a Boy in a Turban."
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Do not describe the artwork, ask open-ended questions to guide the user through it.
 If the user tries to talk about another painting , gently guide them back to {active_painting}
-You want to do this in 5 stages. The current stage is {stage}. Vary the beginnings of your responses.
-Here are all the items in the painting: {items}
-If the user begins describing objects not in the above list ask them to focus on the items in the painting.
-If the user is struggling to perceive or identify an item, you may describe it.
-{compare}"""
-        
+You want to do this in 4 stages. The current stage is {stage}. Vary the beginnings of your responses. Do not say the stage.
+{items}
+{compare}
+"""
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
@@ -77,12 +81,12 @@ If the user is struggling to perceive or identify an item, you may describe it.
         # remove mentioned items from knownObjects
         if knownObjects is None:
             return [SlotSet('known_objects',  databaseObjects)]
-        elif len(knownObjects) < len(databaseObjects)*(50/100):
+        elif len(knownObjects) <= len(databaseObjects)*(50/100):
             print("we should transition to the next stage")
-            return [SlotSet('known_objects',  None)]
+            return [SlotSet('no_objects',  True), SlotSet('known_objects',  None)]
         else:
             del messages[0]
-            covered_items = usefull.check_chat_for_items(messages[-3:], knownObjects)
+            covered_items = usefull.check_mentions(messages[-3:], knownObjects)
             print([t for t in knownObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]  
 
@@ -102,7 +106,7 @@ class ActionAuthorTechnique(Action):
         query = f"""MATCH (g:Genre)<--(n:Paintings)-[on_MATERIAL]->(m:Material)
                     WHERE n.name = "{active_painting}"
                     UNWIND [[m.name, m.description], [g.name, g.description]] AS item
-                    RETURN item[0] AS name, item[1] AS description"""
+                    RETURN DISTINCT item[0] AS name, item[1] AS description"""
         materialsAndGenres=""
         databaseObjects=usefull.callDatabase(query)
         for record in databaseObjects:
@@ -114,6 +118,7 @@ You are a tour guide trained in Visual Thinking Strategies (VTS).
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 You want to do this in 5 stages. The current stage is {stage}. 
 Ask open-ended questions to guide the user. Vary the beginnings of your responses.
+If the last message in the chat was describing an item, commend their observation and transition to the current stage.
 You may describe the techniques if the user is having trouble perceiving or identifying them.
 Here are some details genre and materials: {materialsAndGenres}
         """
@@ -129,12 +134,12 @@ Here are some details genre and materials: {materialsAndGenres}
             return [SlotSet('known_objects',  None)]
         else:
             del messages[0]
-            covered_items = usefull.check_chat_for_items(messages[-3:], materialsAndGenres)
+            covered_items = usefull.check_mentions(messages[-3:], materialsAndGenres)
             return [SlotSet('known_objects', [t for t in materialsAndGenres if t[0] not in covered_items])]
         
 class ActionFeelings(Action):
     def name(self) -> Text:
-        return "action_feelings_api"
+        return "action_interpretation_api"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
@@ -143,14 +148,21 @@ class ActionFeelings(Action):
         # user_input = tracker.latest_message.get('text')
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
-        stage = tracker.get_slot("stage")
+        stage = tracker.get_slot("stage")   
+        database_inter=usefull.get_interpretations(active_painting)
+        interpretations = ""
+        if database_inter is not None:
+            for item in database_inter:
+                interpretations = interpretations + f"\n{item}"
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
-You want to do this in 5 stages. The current stage is {stage}. Do not go to other stages. Vary the beginnings of your responses.
+You want to do this in 5 stages. The current stage is {stage}. Vary the beginnings of your responses.
 If the user tries to talk about another painting , gently guide them back to {active_painting}
-Do not describe the artwork, prompt the user to give their opinion.
+Here is a list of interpreations assosiated with the painting: {interpretations} 
+They are not described by the user. You may use one of them as an example if the user is struggling.
 """
+        
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
@@ -158,18 +170,19 @@ Do not describe the artwork, prompt the user to give their opinion.
 
 class ActionSendFeelingsToDatabase(Action):
     def name(self) -> Text:
-        return "action_send_feelings_to_database"
+        return "action_send_interpretation_to_database"
 
     def run(self, dispatcher: CollectingDispatcher,
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
-        feeling = usefull.extract_emotion(tracker.get_slot("current_feeling"))
+        
+        interpretation = tracker.get_slot("current_interpretation")
         query = f"""
                 MATCH (n:Paintings) 
                 WHERE n.name="{tracker.get_slot("active_painting")}" 
-                SET n.feelings= CASE
-                    WHEN '{feeling}' IN coalesce(n.feelings, []) THEN n.feelings
-                    ELSE n.feelings + '{feeling}'
+                SET n.interpretations= CASE
+                    WHEN '{interpretation}' IN coalesce(n.feelings, []) THEN n.feelings
+                    ELSE coalesce(n.feelings, []) + '{interpretation}'
                 END
                 """
         usefull.callDatabase(query)
@@ -193,9 +206,11 @@ You are a tour guide trained in Visual Thinking Strategies (VTS).
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Summarize the conversation regarding the painting {active_painting} in no more than 5 bullet points.
 Use the information from the conversation and this description of the artwork:{description} 
+Do not ask the user any more questions.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
+        print(openai_response)
         dispatcher.utter_message(text=openai_response)
         return [] 
     
@@ -237,36 +252,39 @@ class usefull():
             openai_response = f"Sorry, I encountered an error: {str(e)}"
         return openai_response
     
-    def preprocess_text(text):
-        text = text.lower()
-        text = re.sub(r"['’]", "", text)
-        text = re.sub(r"[-_]", " ", text)
-        text = text.translate(str.maketrans("", "", punctuation))
-        text = re.sub(r"\s+", " ", text).strip()
-        words = text.split()
-        words = [word for word in words if word not in stop_words]
-        stemmed_words = [stemmer.stem(word) for word in words]
-        preprocessed_text = " ".join(stemmed_words)
-        return preprocessed_text
+    def embed_text(text, nlp_model):
+        doc = nlp_model(text)
+        return doc.vector
 
-    def check_chat_for_items(chat, items, threshold=80):
-        found_items = []
-        for message in chat:
-            content = usefull.preprocess_text(message['content'])
-            for name, description in items:
-                processed_name = usefull.preprocess_text(name)
-                name_match_score = fuzz.token_set_ratio(content, processed_name)
-                description_match_score = 0
-                if description is not None:
-                    description = usefull.preprocess_text(description)
-                    description_match_score = fuzz.token_set_ratio(content, description)
-                if name_match_score >= threshold or description_match_score >= threshold:
-                    found_items.append(name)
-                    print(f"Found item: {name}")
-        return found_items
+    def check_mentions(chat, items, threshold=0.55):
+        # Embed chat and items
+        chat_embeddings = [usefull.embed_text(entry['content'], nlp) for entry in chat]
+        item_embeddings = [(name, usefull.embed_text(description if description else name, nlp)) for name, description in items]
+        
+        results = []
+        for item_name, item_embedding in item_embeddings:
+            mentioned = False
+            for chat_embedding in chat_embeddings:
+                similarity = 1 - cosine(chat_embedding, item_embedding)
+                # print(f"Similarity for item {item_name}: {similarity}")
+                if similarity > threshold:
+                    print(f"Item {item_name} mentioned")
+                    results.append(item_name)
+                    break
+            
+        
+        return results
     
-    def extract_emotion(text):
-        predictions = emotion_classifier(text)
-        emotions = {pred['label']: pred['score'] for pred in predictions[0]}
-        primary_emotion = max(emotions, key=emotions.get)
-        return primary_emotion
+    # def extract_emotion(text):
+    #     predictions = emotion_classifier(text)
+    #     emotions = {pred['label']: pred['score'] for pred in predictions[0]}
+    #     primary_emotion = max(emotions, key=emotions.get)
+    #     return primary_emotion
+    
+    def get_interpretations(panting):
+        query = f"""
+                MATCH (n:Paintings) 
+                WHERE n.name="{panting}" 
+                RETURN n.interpretation
+                """
+        return usefull.callDatabase(query)[0].data()["n.interpretation"]

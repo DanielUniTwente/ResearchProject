@@ -32,11 +32,16 @@ nlu:
     - of course
     - that sounds good
     - correct
-- intent: deny
+# - intent: end_of_comparison
+#   examples: |
+#     - I cannot think of any other comparison
+#     - I cannot think of any other difference
+#     - Those are all the differences I can think of
+- intent: end_of_interpertation
   examples: |
-    - I don't think so
-    - no
-    - I cant see anything else
+    - I cannot think of any other interpretation
+    - I cannot think of any other meaning
+    - Those are all the meanings I can think of
 - intent: bot_challenge
   examples: |
     - are you a bot?

@@ -23,7 +23,7 @@ flows:
         reset_after_flow_ends: false
       - set_slots:
           - image_url: active_painting
-      - link: "observation"
+      - link: "describe_interpretation"
 
   # initial_question:
   #   description: "Asks the user the initial question about the painting"
@@ -34,106 +34,115 @@ flows:
 
   observation:
     description: "User is asked to make an observation about their chosen painting, until they have gone over all objects in the painting"
-    if: "slots.active_painting"
+    if: False
     steps:
       - id: "set_stage"
         set_slots:
           - stage: "observation"
-        next: "first_observation"
-      - id: "first_observation"
-        collect: "observation"
-        utter: utter_ask_first_observation
+          - no_objects: False
         next: "loop"
       - id: "loop"
         collect: "observation"
         ask_before_filling: true
         utter: action_send_to_api
         next:
-          - if: "slots.known_objects is None"
+          - if: "slots.no_objects"
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
-        observation: "empty"
         link: "describe_story"
 
   describe_story:
-    description: "User is asked to create a narrative about their chosen painting, until they say they have no more to add to the story"
-    if: "slots.active_painting"
+    description: "User is asked to create a narrative about their chosen painting, until they have no more to add to the story"
+    if: False
     steps:
       - id: "set_stage"
         set_slots:
           - stage: "describe story"
+          - no_objects: False
         next: "loop"
       - id: "loop"
         collect: "observation"
         ask_before_filling: true
         utter: action_send_to_api
         next:
-          - if: "slots.known_objects is None"
+          - if: "slots.no_objects"
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
-        observation: "empty"
         link: "describe_author_technique"
 
   describe_author_technique:
-    description: "User is asked to describe the author's technique in their chosen painting, until they say they have no more to add"
-    if: "slots.active_painting"
+    description: "User is asked to describe the author's technique in their chosen painting, until they have covered all techniques they can think of"
+    if: False
     steps:
       - id: "set_stage"
         set_slots:
           - stage: "describe author technique"
+          - no_objects: False
         next: "loop"
       - id: "loop"
         collect: "observation"
         ask_before_filling: true
         utter: action_author_technique_api
         next:
-          - if: "slots.known_objects is None"
+          - if: "slots.no_objects"
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
-        observation: "empty"
-        link: "describe_feelings"
+        link: "describe_interpretation"
 
-  describe_feelings:
-    description: "Asks the user to describe their feelings about the painting"
-    if: "slots.active_painting"
+  describe_interpretation:
+    description: "Asks the user to describe how they interpret their current painting"
+    if: False
     steps:
       - id: "set_stage"
         set_slots:
-          - stage: "describe feelings"
-        next: "ask_feelings"
-      - id: "ask_feelings"
-        collect: "current_feeling"
+          - stage: "describe interpretation"
+        next: "ask_interpretation"
+      - id: "ask_interpretation"
+        collect: "current_interpretation"
         ask_before_filling: true
         reset_after_flow_ends: false
-        utter: action_feelings_api
-      - link: "next_painting"
-
-  compare_painting:
-    description: "Asks the user to compare their chosen painting to the last painting"
-    if: "slots.active_painting and slots.last_active_painting"
-    steps:
-      - id: "set_stage"
-        set_slots:
-          - stage: "compare"
-        next: "loop"
-      - id: "loop"
-        collect: "observation"
-        ask_before_filling: true
-        utter: action_send_to_api
+        utter: action_interpretation_api
         next:
           - if: "slots.no_more"
-            then: "no_more_observation"
-          - else: "loop"
-      - id: "no_more_observation"
-        observation: "empty"
-        link: "next_painting"
+            then: "choose_next"
+          - else: "ask_interpretation"
+      - id: "choose_next"
+      #   noop: true
+      #   next:
+      #     - if: "slots.active_painting and slots.last_active_painting"
+      #       then: "compare_painting"
+      #     - else: "summary"  
+      # - id: "compare_painting"
+      #   link: "compare_painting"
+      # - id: "summary"
+        link: "summary"
+
+  # compare_painting:
+  #   description: "Asks the user to compare their chosen painting to the last painting"
+  #   if: False
+  #   steps:
+  #     - id: "set_stage"
+  #       set_slots:
+  #         - stage: "compare"
+  #       next: "loop"
+  #     - id: "loop"
+  #       collect: "observation"
+  #       ask_before_filling: true
+  #       utter: action_send_to_api
+  #       next:
+  #         - if: "slots.no_more"
+  #           then: "no_more_observation"
+  #         - else: "loop"
+  #     - id: "no_more_observation"
+  #       observation: "empty"
+  #       link: "summary"
 
   summary:
     description: "Summarizes the user's observations and feelings about the painting"
-    if: "slots.active_painting"
+    if: False
     steps:
       - set_slots:
             - stage: "summary"
@@ -142,26 +151,39 @@ flows:
 
   next_painting:
     description: "Prompts the user to choose the next painting"
-    if: "slots.active_painting"
+    if: False
     steps:
       - id: "set_last_active_painting"
         set_slots:
           - last_active_painting: "active_painting"
-        next: "send_feelings_to_database"
-      - id: "send_feelings_to_database"
-        action: "action_send_feelings_to_database"
-      - link: "choose_painting"
+        next: "send_interpretation_to_database"
+      - id: "send_interpretation_to_database"
+        action: "action_send_interpretation_to_database"
+        next: "move_on"
+      - id: "move_on"
+        action: "utter_lets_move_on"
+        next: "choose_painting"
+      - id: "choose_painting"
+        link: "choose_painting"
   
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      - id: "choose response"
-        noop:
-          - if: "slots.challenge_ai"
-            action: "utter_iamabot"
-            set_slots:
-              - challenge_ai: False
-          - else: 
-            action: "utter_out_of_scope"
-  
+      # - id: "choose response"
+      #   noop: true
+      #   next:
+      #     - if: "slots.challenge_ai"
+      #       then:
+      #         - action: "utter_iamabot"
+      #         - set_slots:
+      #           - challenge_ai: False
+      #     - else: 
+        - action: "utter_out_of_scope"
+        # noop: true
+        # next:
+        #   - if: not slots.authenticated
+        #     then:
+        #       - call: authenticate_user
+        #         next: ask_new_address
+        #   - else: ask_new_address

@@ -69,10 +69,10 @@ async function sendButtonMessage(payload) {
         case 'Head of a Boy in a Turban':
             imageContainer.src = turbanBoyImageUrl;
             break;
-        case 'Diego Bemba':
+        case 'Diego Bemba, a Servant of Don Miguel de Castro':
             imageContainer.src = diegoBembaImageUrl;
             break;
-        case 'Pedro Sunda':
+        case 'Pedro Sunda, a Servant of Don Miguel de Castro':
             imageContainer.src = pedroSundaImageUrl;
             break;
         default:
