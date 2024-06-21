@@ -7,9 +7,8 @@
         openai
         neo4j 
         flask 
-        fuzzywuzzy
+        spaCy
         dotenv
-        ntlk
 ### Setup
 * Rasa
 

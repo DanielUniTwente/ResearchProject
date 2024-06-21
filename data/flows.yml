@@ -1,40 +1,64 @@
 flows:
   greet_user:
     description: "Greets the user back"
-    # nlu_trigger:
-    #   - intent: "greet"
     steps:
       - action: "utter_greet"
       - link: "choose_painting"
-    
-  test_database:
-    description: "Tests the database connection"
-    if: False
-    steps:
-      - action: "action_test_database_access"
-      - link: "choose_painting"
 
+  restart_conversation:
+    description: "resets the conversation"
+    if: False
+    # nlu_trigger:
+    #   - intent: stop_discussion
+    steps:
+      - action: "utter_finish_discussion"
+      - action: "action_reset_conversation"
+
+  stop_switch_discussion:
+    description: "The user wants to stop discussing the current painting and the assistance asks if they want to continue discussing another painting or stop the conversation altogether" 
+    # nlu_trigger:
+    #   - intent: switch_painting
+    steps:
+      - id: "continue"
+        collect: "continue_discussion"
+        ask_before_filling: true
+        utter: utter_ask_continue_discussion
+        next:
+          - if: "slots.continue_discussion"
+            then: "clear_slots"
+          - else: "stop_discussion"
+      - id: "clear_slots"
+        action: "action_reset_known_objects"
+        next: "choose_painting"
+      - id: "choose_painting"
+        link: "choose_painting"
+      - id: "stop_discussion"
+        link: "restart_conversation"
+      #   next:
+      #     - if: "slots.continue_discussion"
+      #       then: "choose_painting"
+      #     - else: "stop_discussion"
+      # - id: "choose_painting"
+      #   link: "choose_painting"
+      # - id: "stop_discussion"
+      #   link: "stop_discussion"
 
   choose_painting:
-    description: "Prompts the user to choose a painting from a list of 4 paintings"
+    description: "Prompts the user to choose a painting from a list of 4"
+    if: False
     steps:
       - collect: "active_painting"
         ask_before_filling: true
         reset_after_flow_ends: false
       - set_slots:
           - image_url: active_painting
-      - link: "describe_interpretation"
-
-  # initial_question:
-  #   description: "Asks the user the initial question about the painting"
-  #   if: "slots.active_painting"
-  #   steps:
-  #     - action: "utter_initial_question"
-  #     - link: "observation"
+          - stage: "observation"
+      - action: "utter_lets_start"
+      - link: "observation"
 
   observation:
-    description: "User is asked to make an observation about their chosen painting, until they have gone over all objects in the painting"
-    if: False
+    description: "User and assistant disscuss simple observations about the chosen painting, until they have gone over all objects in the painting"
+    if: "slots.active_painting and slots.stage == 'observation'"
     steps:
       - id: "set_stage"
         set_slots:
@@ -50,11 +74,15 @@ flows:
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
+        set_slots:
+          - stage: "describe story"
+        next: "next_stage"
+      - id: "next_stage"
         link: "describe_story"
 
   describe_story:
     description: "User is asked to create a narrative about their chosen painting, until they have no more to add to the story"
-    if: False
+    if: "slots.active_painting and slots.stage == 'describe story'"
     steps:
       - id: "set_stage"
         set_slots:
@@ -70,11 +98,15 @@ flows:
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
+        set_slots:
+          - stage: "describe author technique"
+        next: "next_stage"
+      - id: "next_stage"
         link: "describe_author_technique"
 
   describe_author_technique:
     description: "User is asked to describe the author's technique in their chosen painting, until they have covered all techniques they can think of"
-    if: False
+    if: "slots.active_painting and slots.stage == 'describe author technique'"
     steps:
       - id: "set_stage"
         set_slots:
@@ -90,11 +122,15 @@ flows:
             then: "no_more_observation"
           - else: "loop"
       - id: "no_more_observation"
+        set_slots:
+          - stage: "describe interpretation"
+        next: "next_stage"
+      - id: "next_stage"
         link: "describe_interpretation"
 
   describe_interpretation:
     description: "Asks the user to describe how they interpret their current painting"
-    if: False
+    if: "slots.active_painting and slots.stage == 'describe interpretation'"
     steps:
       - id: "set_stage"
         set_slots:
@@ -165,25 +201,21 @@ flows:
         next: "choose_painting"
       - id: "choose_painting"
         link: "choose_painting"
+
+  pattern_search:
+    description: handle a knowledge-based question or request
+    name: pattern search
+    steps:
+      - action: action_give_description
   
   pattern_chitchat:
     description: handle interactions with the user that are not task-oriented
     name: pattern chitchat
     steps:
-      # - id: "choose response"
-      #   noop: true
-      #   next:
-      #     - if: "slots.challenge_ai"
-      #       then:
-      #         - action: "utter_iamabot"
-      #         - set_slots:
-      #           - challenge_ai: False
-      #     - else: 
         - action: "utter_out_of_scope"
-        # noop: true
-        # next:
-        #   - if: not slots.authenticated
-        #     then:
-        #       - call: authenticate_user
-        #         next: ask_new_address
-        #   - else: ask_new_address
+
+  pattern_cancel_flow:
+    description: A meta flow that's started when a flow is cancelled.
+    steps:
+      - link: "stop_switch_discussion"
+

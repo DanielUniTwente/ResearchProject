@@ -41,6 +41,7 @@ pipeline:
   - name: LLMCommandGenerator
     llm:
       model_name: "gpt-3.5-turbo"
+  
 
 # Configuration for Rasa Core.
 # https://rasa.com/docs/rasa/core/policies/
@@ -54,6 +55,9 @@ policies:
     llm:
         model_name: "gpt-3.5-turbo"
         temperature: 0.3
+  # - name: rasa_plus.ml.IntentlessPolicy
+  #   llm: 
+  #     model_name: "gpt-3.5-turbo"
   # - name: UnexpecTEDIntentPolicy
   #   max_history: 5
   #   epochs: 100

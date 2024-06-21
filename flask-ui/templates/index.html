@@ -23,6 +23,7 @@
     </div>
     <script>
         // window.onload = function() {
+        //     // Send the /restart message to reset the chat
         //     fetch('/send_message', {
         //         method: 'POST',
         //         headers: { 'Content-Type': 'application/json' },
@@ -31,9 +32,20 @@
         //     .then(response => response.json())
         //     .then(data => {
         //         console.log('Chat reset successful');
+                
+        //         // Send the "hi" message to the Rasa server as user input
+        //         return fetch('/send_message', {
+        //             method: 'POST',
+        //             headers: { 'Content-Type': 'application/json' },
+        //             body: JSON.stringify({ message: 'hi' })
+        //         });
+        //     })
+        //     .then(response => response.json())
+        //     .then(data => {
+        //         console.log('Message "hi" sent successfully');
         //     })
         //     .catch(error => {
-        //         console.error('Error resetting chat:', error);
+        //         console.error('Error sending message:', error);
         //     });
         // };
         const defaultImageUrl = "{{ url_for('static', filename='images/default.jpg') }}";

@@ -3,13 +3,15 @@ intents:
 - greet
 - goodbye
 - affirm
-# - end_of_comparison
+- deny
 - bot_challenge
 - observation
 - choose_painting
 - describe_feelings
 - struggle
 - end_of_interpertation
+- switch_painting
+- stop_discussion
 
 actions:
 - utter_greet
@@ -18,6 +20,7 @@ actions:
 - utter_ask_active_painting
 - utter_ask_first_observation
 - utter_out_of_scope
+- utter_finish_discussion
 - action_test_database_access
 - action_send_to_api
 - action_summarize
@@ -25,12 +28,26 @@ actions:
 - action_set_image
 - action_interpretation_api
 - action_send_interpretation_to_database
-
+- action_reset_conversation
+- utter_ask_continue_discussion
+- action_give_description
+- action_reset_known_objects
 entities:
 - favourite_painting
 - active_painting
 - current_feeling
 slots:
+  continue_discussion:
+    type: bool
+    influence_conversation: false
+    # initial_value: true
+    mappings:
+    - type: from_intent
+      value: true
+      intent: affirm
+    - type: from_intent
+      value: false
+      intent: deny
   image_url:
     type: text
     influence_conversation: false
@@ -97,11 +114,15 @@ slots:
       value: true
       intent: bot_challenge
 responses:
+  utter_finish_discussion:
+  - text: "I hope you enjoyed the discussion. Have a great day!"
+  utter_lets_start:
+  - text: Ok, Let's start.
+  - text: Let's get started.
+  - text: Ok, let's begin.
   utter_lets_move_on:
   - text: Let's move on to the next painting.
   - text: Ok let's look at some other paintings.
-  utter_no_knowledge_base:
-  - text: I am sorry, but I cannot help you with that.
   utter_flow_continue_interrupted:
   - text: ""
   utter_greet:
@@ -128,12 +149,17 @@ responses:
       payload: 'Diego Bemba, a Servant of Don Miguel de Castro'
     - title: "Pedro Sunda, a Servant of Don Miguel de Castro"
       payload: 'Pedro Sunda, a Servant of Don Miguel de Castro'
-  # utter_ask_observation:
-  # - text: What else do you see?
+  utter_ask_continue_discussion:
+  - text: Do you want to continue the discussion?
+    buttons:
+    - title: "Yes"
+      payload: /affirm
+    - title: "No"
+      payload: /deny
   utter_ask_first_observation:
   - text: What is going on here?
   utter_out_of_scope:
-  - text: I am sorry, I can not help you with that.
+  - text: Let's focus on the painting.
     metadata:
       rephrase: true
   # utter_ask_detail:

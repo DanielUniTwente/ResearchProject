@@ -25,13 +25,7 @@ nlu:
     - bye bye
     - see you later
 - intent: affirm
-  examples: |
-    - yes
-    - y
-    - indeed
-    - of course
-    - that sounds good
-    - correct
+- intent: deny
 # - intent: end_of_comparison
 #   examples: |
 #     - I cannot think of any other comparison
@@ -47,7 +41,25 @@ nlu:
     - are you a bot?
     - are you a human?
     - am I talking to a bot?
-    - am I talking to a human?
+    - am I talking to a human?    
+- intent: stop_switch_discussion
+  examples: |
+    - I want to look at another painting
+    - I want to see another painting
+    - I dont want to discuss this painting anymore
+    - I want to stop
+    - I want to end the discussion
+    - I dont want to discuss anymore
+    - I want to quit
+    - I want to stop discussing
+    - I want to end the conversation
+    - Stop the conversation
+    - End the conversation
+    - Quit the conversation
+    - Quit
+    - Stop
+    - End
+    - i dont want to look at this painting anymore
 - intent: observation
   examples: |
     - I see a man who is well dressed
@@ -65,10 +77,10 @@ nlu:
     - I feel that is because
 - intent: choose_painting
   examples: |
-    - King Casper
-    - Head of a Boy in a Turban
-    - Portrait of Diego Bemba
-    - Portrait of Pedro Sunda
+    - [King Casper](active_painting)
+    - [Head of a Boy in a Turban](active_painting)
+    - [Portrait of Diego Bemba](active_painting)
+    - [Portrait of Pedro Sunda](active_painting)
 - intent: describe_feelings
   examples: |
     - It makes me feel [happy](current_feeling)
