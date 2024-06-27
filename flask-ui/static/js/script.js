@@ -3,18 +3,14 @@
 async function sendMessage() {
     const userInput = document.getElementById('userInput').value;
     if (userInput.trim() === '') return;
-
     const chatbotContainer = document.getElementById('chatbot');
-
-    // Add user's message to the chat
     const userMessage = document.createElement('div');
     userMessage.textContent = userInput;
     userMessage.className = 'user-message';
     chatbotContainer.appendChild(userMessage);
+    document.getElementById('userInput').value = ''; 
 
-    document.getElementById('userInput').value = ''; //clear input field
-
-    // Send the message to rasa
+    // Send message to rasa
     const response = await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -57,11 +53,18 @@ async function sendButtonMessage(payload) {
     const imageContainer = document.querySelector('.image-container img');
 
     const userMessage = document.createElement('div');
-    userMessage.textContent = payload;
-    userMessage.className = 'user-message';
-    chatbotContainer.appendChild(userMessage);
-
-    // Update image based on choice
+    if (payload === '/inform{{"active_painting":"King Caspar"}}')
+        userMessage.textContent = 'King Caspar';
+    else if (payload === '/inform{{"active_painting":"Head of a Boy in a Turban"}}')
+        userMessage.textContent = 'Head of a Boy in a Turban';
+    else if (payload === '/inform{{"active_painting":"Diego Bemba, a Servant of Don Miguel de Castro"}}')
+        userMessage.textContent = 'Diego Bemba, a Servant of Don Miguel de Castro';
+    else if (payload === '/inform{{"active_painting":"Pedro Sunda, a Servant of Don Miguel de Castro"}}')
+        userMessage.textContent = 'Pedro Sunda, a Servant of Don Miguel de Castro';
+    // userMessage.textContent = payload;
+    // userMessage.className = 'user-message';
+    // chatbotContainer.appendChild(userMessage);
+    // painting = JSON.parse(payload.substring(8))
     switch (payload) {
         case 'King Caspar':
             imageContainer.src = kingCasparImageUrl;
@@ -79,7 +82,7 @@ async function sendButtonMessage(payload) {
             imageContainer.src = defaultImageUrl;
     }
 
-    // Send the painting to rasa
+    // Send message to rasa
     const response = await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -87,7 +90,7 @@ async function sendButtonMessage(payload) {
     });
     const data = await response.json();
 
-    // Add bot's response to the chat
+    // Add bot response to chat
     data.forEach((message) => {
         const botMessage = document.createElement('div');
         botMessage.textContent = message.text;
@@ -100,12 +103,10 @@ async function sendButtonMessage(payload) {
 async function resetChat() {
     const chatbotContainer = document.getElementById('chatbot');
     const imageContainer = document.querySelector('.image-container img');
-    chatbotContainer.innerHTML = ''; //clear chatbox
-
+    chatbotContainer.innerHTML = ''; 
     imageContainer.src = defaultImageUrl;
     enableTextInput();
 
-    // restart Rasa server
     await fetch('/send_message', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

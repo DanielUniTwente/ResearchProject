@@ -41,15 +41,18 @@ nlu:
     - are you a bot?
     - are you a human?
     - am I talking to a bot?
-    - am I talking to a human?    
-- intent: stop_switch_discussion
+    - am I talking to a human?  
+- intent: switch_painting
   examples: |
     - I want to look at another painting
     - I want to see another painting
     - I dont want to discuss this painting anymore
+    - i dont want to look at this painting anymore  
+- intent: stop_discussion
+  examples: |
     - I want to stop
     - I want to end the discussion
-    - I dont want to discuss anymore
+    - I dont want to discuss this anymore
     - I want to quit
     - I want to stop discussing
     - I want to end the conversation
@@ -59,7 +62,6 @@ nlu:
     - Quit
     - Stop
     - End
-    - i dont want to look at this painting anymore
 - intent: observation
   examples: |
     - I see a man who is well dressed
@@ -75,12 +77,12 @@ nlu:
     - I think that is because
     - I believe that is because
     - I feel that is because
-- intent: choose_painting
-  examples: |
-    - [King Casper](active_painting)
-    - [Head of a Boy in a Turban](active_painting)
-    - [Portrait of Diego Bemba](active_painting)
-    - [Portrait of Pedro Sunda](active_painting)
+# - intent: choose_painting
+#   examples: |
+#     - [King Casper](active_painting)
+#     - [Head of a Boy in a Turban](active_painting)
+#     - [Portrait of Diego Bemba](active_painting)
+#     - [Portrait of Pedro Sunda](active_painting)
 - intent: describe_feelings
   examples: |
     - It makes me feel [happy](current_feeling)

@@ -38,36 +38,50 @@ class ActionSendToAPI(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
+        # for event in reversed(tracker.events):
+        #     if event.get("event") == "user":
+        #         user_message = event.get("text")
+        #         break
+        # print(user_message)
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
-        print(active_painting)
+        print(f"the active painting:{active_painting}")
         stage = tracker.get_slot("stage")
-        query = f"""MATCH (c:Content)<--(p:Paintings)-->(i:Item) 
+        query = f"""MATCH (p:Paintings)-->(i:Item) 
                     WHERE p.name="{active_painting}" 
-                    UNWIND [[i.name, i.Description], [c.name, c.description]] AS item
-                    RETURN DISTINCT item[0] AS name, item[1] AS description"""
-        knownObjects = tracker.get_slot("known_objects")
-        items=""
-        compare="" 
+                    OPTIONAL MATCH (c:Content)<--(p)
+                    UNWIND [[i.name, coalesce(i.Description, 'No description available')], [c.name, coalesce(c.description, 'No description available')]] AS item
+                    WITH item WHERE item[0] IS NOT NULL
+                    RETURN DISTINCT item[0] AS name, item[1] AS description
+                """
+        knownObjects = tracker.get_slot("known_objects") 
         databaseObjects=usefull.callDatabase(query)
-        # if stage == "observation" or stage == "describe story":
-        items="In the painting there are one person and some items. Here is a list of them that the user has not yet mentioned:"
+        databaseItems=""
+        # not_mentioned=""
         for record in databaseObjects:
-            items = items + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
-        items = items + "\nDo not talk or make up items that are not in the list.\nIf the user begins describing objects not in the above list prompt them with one of them.\nIf the user is struggling to perceive or identify an item, you may describe it."
+            databaseItems = databaseItems + f"""Object: {record['name']} Description: {record['description']}"""
+        # for item in knownObjects:
+        #     not_mentioned = not_mentioned + f"""Item: {item[0]}\nDescription: {item[1]}\n"""
+        print(f"known objects: {databaseItems}")
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Do not describe the artwork, ask open-ended questions to guide the user through it.
 If it is the beginning of the conversation, ask "What do you see?". 
-Comment on and commend their observations.Ask one question at a time and keep your responses short if possible. Always finish with a question.
-If the user tries to talk about another painting , gently guide them back to {active_painting}
+Comment on and commend their observations. You can give only one description and one question per response. Keep responses short if possible.
+If the user wants to talk about a specific item ask a question about it. 
+Ensure all of your responses transition smoothly with the latest message in the conversation. Always finish with a question.
+If the user tries to talk about another painting , gently guide them back to {active_painting}.
 You want to do this in 4 stages. The current stage is {stage}. Vary the beginnings of your responses. Do not say the stage.
-{items}
-Try to describe items in the painting before using them in questions.
-{compare}
+In the painting there are one person and some items. Here is a list with descriptions:
+{databaseItems}
+If the user mentions an item without describing it, prompt them to describe it.
+Do not use the description of items when forming a question about them. Do not talk or make up items that are not in the list.
+If the user begins describing objects not in the above list prompt them with one of them.
+If the user is struggling to answer a question apologise and try to reword it.
 """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
+        print(messages)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
         print(stage)
@@ -95,25 +109,25 @@ class ActionAuthorTechnique(Action):
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")
-        
         query = f"""MATCH (g:Genre)<--(n:Paintings)-[on_MATERIAL]->(m:Material)
                     WHERE n.name = "{active_painting}"
                     UNWIND [[m.name, m.description], [g.name, g.description]] AS item
                     RETURN DISTINCT item[0] AS name, item[1] AS description"""
-        materialsAndGenres=""
-        knownObjects=usefull.callDatabase(query)
-        for record in knownObjects:
-            materialsAndGenres= materialsAndGenres + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
-            
+        databaseItems=""
+        materialsAndGenres=tracker.get_slot("known_objects")
+        databaseObjects=usefull.callDatabase(query)
+        for record in databaseObjects:
+            databaseItems= databaseItems + f"""Name: {record['name']} Description: {record['description']}"""
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 You want to do this in 5 stages. The current stage is {stage}. 
-Ask open-ended questions to guide the user. Comment on and commend their observations. Vary the beginnings of your responses. 
-Ask one question at a time and keep your responses short if possible.
-If the last message in the chat was describing an item, commend their observation and transition to the current stage.
+Do not describe the artwork, ask open-ended questions to guide the user through it.
+Comment on and commend their observations. You can give only one description and one question per response. Keep responses short if possible.
+Ensure all of your responses transition smoothly with the latest message in the conversation. Always finish with a question.
 You may describe the techniques if the user is having trouble perceiving or identifying them.
-Here are some details on genre and materials that the user has not yet mentioned: {materialsAndGenres}
+Here are the genres and materials used in the painting: 
+{databaseItems}
 Do not talk about items not in the list.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
@@ -123,13 +137,15 @@ Do not talk about items not in the list.
 
         # remove mentioned entries from knownObjects
         if materialsAndGenres is None:
-            return [SlotSet('known_objects',  knownObjects)]
-        elif len(materialsAndGenres) < len(knownObjects)*(50/100):
+            return [SlotSet('known_objects',  databaseObjects)]
+        elif len(materialsAndGenres) < len(databaseObjects)*(50/100):
+            print("we should transition to the next stage")
             return [SlotSet('no_objects',  True), SlotSet('known_objects',  None)]
         else:
             del messages[0]
-            covered_items = usefull.check_mentions(messages[-3:], knownObjects)
-            return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]
+            covered_items = usefull.check_mentions(messages[-3:], databaseObjects)
+            print([t for t in databaseObjects if t[0] not in covered_items])
+            return [SlotSet('known_objects', [t for t in databaseObjects if t[0] not in covered_items])]
         
 class ActionInterpretation(Action):
     def name(self) -> Text:
@@ -144,20 +160,22 @@ class ActionInterpretation(Action):
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")   
         database_inter=usefull.get_interpretations(active_painting)
+        print(stage)
         interpretations = ""
         if database_inter is not None:
             for item in database_inter:
-                interpretations = interpretations + f"\n{item}"
+                interpretations = interpretations + f" {item}"
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
-You want to do this in 5 stages. The current stage is {stage}. Vary the beginnings of your responses.
+You want to do this in 5 stages. The current stage is {stage}.
+You want to make them think about symbolism and meaning. Vary the beginnings of your responses.
+Keep responses short if possible. Always finish with a question. Do not ask multiple questions in a single response.
 If the user tries to talk about another painting , gently guide them back to {active_painting}
 If the last message in the chat was describing an item, commend their observation and transition to the current stage.
 Here is a list of interpreations assosiated with the painting: {interpretations} 
 They are not described by the user. You may use one of them as an example if the user is struggling.
 """
-        
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
@@ -197,8 +215,6 @@ class ActionSummarize(Action):
         query = f"""MATCH (n:Paintings) WHERE n.name="{active_painting}" RETURN n.exhibit"""
         description = usefull.callDatabase(query)[0].data()["n.exhibit"]
         instructions = f"""
-You are a tour guide trained in Visual Thinking Strategies (VTS). 
-You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 Summarize the conversation regarding the painting {active_painting} in no more than 5 bullet points.
 Use the information from the conversation and this description of the artwork:{description} 
 Do not ask the user any more questions.
@@ -232,26 +248,43 @@ class ActionGiveDescription(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         active_painting = tracker.get_slot("active_painting")
-        query = f"""MATCH (c:Content)<--(p:Paintings)-->(i:Item) 
+        query = f"""MATCH (p:Paintings)-->(i:Item) 
                     WHERE p.name="{active_painting}" 
-                    UNWIND [[i.name, i.Description], [c.name, c.description]] AS item
-                    RETURN DISTINCT item[0] AS name, item[1] AS description"""
+                    OPTIONAL MATCH (c:Content)<--(p)
+                    UNWIND [[i.name, coalesce(i.Description, 'No description available')], [c.name, coalesce(c.description, 'No description available')]] AS item
+                    WITH item WHERE item[0] IS NOT NULL
+                    RETURN DISTINCT item[0] AS name, item[1] AS description
+                """
         conversation_history = tracker.events
         databaseObjects=usefull.callDatabase(query)
+        query = f"""MATCH (g:Genre)<--(n:Paintings)-[on_MATERIAL]->(m:Material)
+                    WHERE n.name = "{active_painting}"
+                    UNWIND [[m.name, m.description], [g.name, g.description]] AS item
+                    RETURN DISTINCT item[0] AS name, item[1] AS description
+                """
+        databaseMaterialsAndGenres=usefull.callDatabase(query)
         items=""
+        materialsAndGenres=""
         for record in databaseObjects:
-            items = items + f"""\nItem: {record['name']}\nDescription: {record['description']}"""
+            items = items + f""" Object: {record['name']} Description: {record['description']}"""
+        for record in databaseMaterialsAndGenres:
+            materialsAndGenres = materialsAndGenres + f""" Name: {record['name']} Description: {record['description']}"""
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS).
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 The user is struggling to perceive or identify items in the painting. Help them by describing the item they are asking about.
+If the user is asking for your opinion, start the description with "I think" or similar.
 Keep your responses short. Do not ask the user any questions.
 Here is a list of items with descriptions:{items}
+Here is a list of genres and materials used in the painting:{materialsAndGenres}
 """
+        print(instructions)
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
         return []
+    
+
 
 class usefull():
     def constructPrompt(conversation_history, active_painting, instructions):
@@ -295,7 +328,7 @@ class usefull():
         doc = nlp_model(text)
         return doc.vector
 
-    def check_mentions(chat, items, threshold=0.65):
+    def check_mentions(chat, items, threshold=0.60):
     # Embed chat
         chat_embeddings = [usefull.embed_text(entry['content'], nlp) for entry in chat]
         

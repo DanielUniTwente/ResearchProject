@@ -6,12 +6,13 @@ intents:
 - deny
 - bot_challenge
 - observation
-- choose_painting
+# - choose_painting
 - describe_feelings
 - struggle
 - end_of_interpertation
 - switch_painting
 - stop_discussion
+# - stop_switch_discussion
 
 actions:
 - utter_greet
@@ -21,6 +22,7 @@ actions:
 - utter_ask_first_observation
 - utter_out_of_scope
 - utter_finish_discussion
+- utter_lets_continue
 - action_test_database_access
 - action_send_to_api
 - action_summarize
@@ -44,10 +46,10 @@ slots:
     mappings:
     - type: from_intent
       value: true
-      intent: affirm
+      intent: deny
     - type: from_intent
       value: false
-      intent: deny
+      intent: affirm
   image_url:
     type: text
     influence_conversation: false
@@ -58,8 +60,8 @@ slots:
     type: text
     influence_conversation: false
     mappings:
-    - type: from_text
-      intent: choose_painting
+    - type: from_entity
+      entity: active_painting
   favourite_painting:
     type: text
     influence_conversation: false
@@ -92,9 +94,6 @@ slots:
     influence_conversation: false
     initial_value: false
     mappings:
-    # - type: from_intent
-    #   value: true
-    #   intent: end_of_comparison
     - type: from_intent
       value: true
       intent: end_of_interpertation
@@ -114,6 +113,10 @@ slots:
       value: true
       intent: bot_challenge
 responses:
+  utter_lets_continue:
+  - text: Ok, Let's keep going.
+  - text: Ok, let's continue.
+  - text: Alright, let's keep going.
   utter_finish_discussion:
   - text: "I hope you enjoyed the discussion. Have a great day!"
   utter_lets_start:
@@ -142,15 +145,15 @@ responses:
   - text: Which painting would you like to see?
     buttons:
     - title: "King Caspar"
-      payload: 'King Caspar'
+      payload: '/inform{{"active_painting":"King Caspar"}}'
     - title: "Head of a Boy in a Turban"
-      payload: 'Head of a Boy in a Turban'
+      payload: '/inform{{"active_painting":"Head of a Boy in a Turban"}}'
     - title: "Diego Bemba, a Servant of Don Miguel de Castro"
-      payload: 'Diego Bemba, a Servant of Don Miguel de Castro'
+      payload: '/inform{{"active_painting":"Diego Bemba, a Servant of Don Miguel de Castro"}}'
     - title: "Pedro Sunda, a Servant of Don Miguel de Castro"
-      payload: 'Pedro Sunda, a Servant of Don Miguel de Castro'
+      payload: '/inform{{"active_painting":"Pedro Sunda, a Servant of Don Miguel de Castro"}}'
   utter_ask_continue_discussion:
-  - text: Do you want to continue the discussion?
+  - text: Would you like to stop the discussion?
     buttons:
     - title: "Yes"
       payload: /affirm
