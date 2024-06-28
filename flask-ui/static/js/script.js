@@ -52,30 +52,32 @@ async function sendButtonMessage(payload) {
     const chatbotContainer = document.getElementById('chatbot');
     const imageContainer = document.querySelector('.image-container img');
 
-    const userMessage = document.createElement('div');
-    if (payload === '/inform{{"active_painting":"King Caspar"}}')
-        userMessage.textContent = 'King Caspar';
-    else if (payload === '/inform{{"active_painting":"Head of a Boy in a Turban"}}')
-        userMessage.textContent = 'Head of a Boy in a Turban';
-    else if (payload === '/inform{{"active_painting":"Diego Bemba, a Servant of Don Miguel de Castro"}}')
-        userMessage.textContent = 'Diego Bemba, a Servant of Don Miguel de Castro';
-    else if (payload === '/inform{{"active_painting":"Pedro Sunda, a Servant of Don Miguel de Castro"}}')
-        userMessage.textContent = 'Pedro Sunda, a Servant of Don Miguel de Castro';
+    // console.log(payload);
+
+    // const userMessage = document.createElement('div');
+    // if (payload === '/inform{"active_painting":"King Caspar"}')
+    //     userMessage.textContent = 'King Caspar';
+    // else if (payload === '/inform{"active_painting":"Head of a Boy in a Turban"}')
+    //     userMessage.textContent = 'Head of a Boy in a Turban';
+    // else if (payload === '/inform{"active_painting":"Diego Bemba, a Servant of Don Miguel de Castro"}')
+    //     userMessage.textContent = 'Diego Bemba, a Servant of Don Miguel de Castro';
+    // else if (payload === '/inform{"active_painting":"Pedro Sunda, a Servant of Don Miguel de Castro"}')
+    //     userMessage.textContent = 'Pedro Sunda, a Servant of Don Miguel de Castro';
+    // console.log(userMessage.textContent);
     // userMessage.textContent = payload;
     // userMessage.className = 'user-message';
     // chatbotContainer.appendChild(userMessage);
-    // painting = JSON.parse(payload.substring(8))
     switch (payload) {
-        case 'King Caspar':
+        case '/inform{"active_painting":"King Caspar"}':
             imageContainer.src = kingCasparImageUrl;
             break;
-        case 'Head of a Boy in a Turban':
+        case '/inform{"active_painting":"Head of a Boy in a Turban"}':
             imageContainer.src = turbanBoyImageUrl;
             break;
-        case 'Diego Bemba, a Servant of Don Miguel de Castro':
+        case '/inform{"active_painting":"Diego Bemba, a Servant of Don Miguel de Castro"}':
             imageContainer.src = diegoBembaImageUrl;
             break;
-        case 'Pedro Sunda, a Servant of Don Miguel de Castro':
+        case '/inform{"active_painting":"Pedro Sunda, a Servant of Don Miguel de Castro"}':
             imageContainer.src = pedroSundaImageUrl;
             break;
         default:
