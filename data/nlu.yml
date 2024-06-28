@@ -26,11 +26,6 @@ nlu:
     - see you later
 - intent: affirm
 - intent: deny
-# - intent: end_of_comparison
-#   examples: |
-#     - I cannot think of any other comparison
-#     - I cannot think of any other difference
-#     - Those are all the differences I can think of
 - intent: end_of_interpertation
   examples: |
     - I cannot think of any other interpretation
@@ -77,39 +72,10 @@ nlu:
     - I think that is because
     - I believe that is because
     - I feel that is because
-# - intent: choose_painting
-#   examples: |
-#     - [King Casper](active_painting)
-#     - [Head of a Boy in a Turban](active_painting)
-#     - [Portrait of Diego Bemba](active_painting)
-#     - [Portrait of Pedro Sunda](active_painting)
-- intent: describe_feelings
-  examples: |
-    - It makes me feel [happy](current_feeling)
-    - I feel [sad](current_feeling) when I see it
-    - I feel [angry](current_feeling) when I see it
-    - It evokes [loneliness](current_feeling) in me
-# - intent: pick_favourite_painting
-#   examples: |
-#     - I like [portrait of diego bemba](favourite_painting) most
-#     - My favorite is [koning casper](favourite_painting)
-#     - I prefer [head of a boy in a turban](favourite_painting) more
-#     - I think [portrait of pedro sunda](favourite_painting) is the best
-# - intent: reason_favorite_painting
-#   examples: |
-#     - I like it because
-#     - I prefer it because
-#     - I think it is the best because
-#     - I believe it is the best because
-#     - I feel it is the best because
 - intent: struggle
   examples: |
     - I am not sure
     - I can't think of anything else
     - I can't see anything else
-# - intent: stop
-#   examples: |
-#     - Lets stop for now
-#     - I want to end the tour
-#     - I want to quit viewing
+
 

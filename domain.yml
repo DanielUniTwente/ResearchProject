@@ -7,7 +7,7 @@ intents:
 - bot_challenge
 - observation
 # - choose_painting
-- describe_feelings
+# - describe_feelings
 - struggle
 - end_of_interpertation
 - switch_painting
@@ -23,6 +23,7 @@ actions:
 - utter_out_of_scope
 - utter_finish_discussion
 - utter_lets_continue
+- utter_ask_save_interpretation
 - action_test_database_access
 - action_send_to_api
 - action_summarize
@@ -34,6 +35,7 @@ actions:
 - utter_ask_continue_discussion
 - action_give_description
 - action_reset_known_objects
+
 entities:
 - favourite_painting
 - active_painting

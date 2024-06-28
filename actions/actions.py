@@ -21,7 +21,6 @@ import spacy
 from scipy.spatial.distance import cosine
 
 nlp = spacy.load('en_core_web_md')
-# Load a pre-trained emotion analysis pipeline
 load_status = dotenv.load_dotenv("actions/databaseCredentials.txt")
 if load_status is False:
     raise RuntimeError('Environment variables not loaded.')
@@ -45,7 +44,7 @@ class ActionSendToAPI(Action):
         # print(user_message)
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
-        print(f"the active painting:{active_painting}")
+        # print(f"the active painting:{active_painting}")
         stage = tracker.get_slot("stage")
         query = f"""MATCH (p:Paintings)-->(i:Item) 
                     WHERE p.name="{active_painting}" 
@@ -62,7 +61,7 @@ class ActionSendToAPI(Action):
             databaseItems = databaseItems + f"""Object: {record['name']} Description: {record['description']}"""
         # for item in knownObjects:
         #     not_mentioned = not_mentioned + f"""Item: {item[0]}\nDescription: {item[1]}\n"""
-        print(f"known objects: {databaseItems}")
+        # print(f"known objects: {databaseItems}")
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
@@ -74,14 +73,14 @@ Ensure all of your responses transition smoothly with the latest message in the 
 If the user tries to talk about another painting , gently guide them back to {active_painting}.
 You want to do this in 4 stages. The current stage is {stage}. Vary the beginnings of your responses. Do not say the stage.
 In the painting there are one person and some items. Here is a list with descriptions:
-{databaseItems}
+{databaseItems}.
 If the user mentions an item without describing it, prompt them to describe it.
 Do not use the description of items when forming a question about them. Do not talk or make up items that are not in the list.
 If the user begins describing objects not in the above list prompt them with one of them.
 If the user is struggling to answer a question apologise and try to reword it.
 """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
-        print(messages)
+        # print(messages)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
         print(stage)
@@ -94,7 +93,7 @@ If the user is struggling to answer a question apologise and try to reword it.
         else:
             del messages[0]
             covered_items = usefull.check_mentions(messages[-3:], knownObjects)
-            print([t for t in knownObjects if t[0] not in covered_items])
+            # print([t for t in knownObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]  
 
 class ActionAuthorTechnique(Action):    
@@ -127,7 +126,7 @@ Comment on and commend their observations. You can give only one description and
 Ensure all of your responses transition smoothly with the latest message in the conversation. Always finish with a question.
 You may describe the techniques if the user is having trouble perceiving or identifying them.
 Here are the genres and materials used in the painting: 
-{databaseItems}
+{databaseItems}.
 Do not talk about items not in the list.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
@@ -144,7 +143,7 @@ Do not talk about items not in the list.
         else:
             del messages[0]
             covered_items = usefull.check_mentions(messages[-3:], databaseObjects)
-            print([t for t in databaseObjects if t[0] not in covered_items])
+            # print([t for t in databaseObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in databaseObjects if t[0] not in covered_items])]
         
 class ActionInterpretation(Action):
@@ -171,10 +170,10 @@ You are chatting with a single user who is interested in learning more about the
 You want to do this in 5 stages. The current stage is {stage}.
 You want to make them think about symbolism and meaning. Vary the beginnings of your responses.
 Keep responses short if possible. Always finish with a question. Do not ask multiple questions in a single response.
-If the user tries to talk about another painting , gently guide them back to {active_painting}
+If the user tries to talk about another painting , gently guide them back to {active_painting}.
 If the last message in the chat was describing an item, commend their observation and transition to the current stage.
-Here is a list of interpreations assosiated with the painting: {interpretations} 
-They are not described by the user. You may use one of them as an example if the user is struggling.
+Here is a list of interpreations assosiated with the painting: {interpretations}.
+They are not described by the user. You may use one of them as an example.
 """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
@@ -212,6 +211,7 @@ class ActionSummarize(Action):
         # user_input = tracker.latest_message.get('text')
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
+        print("summary")
         query = f"""MATCH (n:Paintings) WHERE n.name="{active_painting}" RETURN n.exhibit"""
         description = usefull.callDatabase(query)[0].data()["n.exhibit"]
         instructions = f"""
@@ -221,7 +221,7 @@ Do not ask the user any more questions.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
-        print(openai_response)
+        # print(openai_response)
         dispatcher.utter_message(text=openai_response)
         return [] 
     
@@ -274,11 +274,15 @@ You are a tour guide trained in Visual Thinking Strategies (VTS).
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
 The user is struggling to perceive or identify items in the painting. Help them by describing the item they are asking about.
 If the user is asking for your opinion, start the description with "I think" or similar.
+Ensure all of your responses transition smoothly with the latest message in the conversation.
+If the user tries to talk about another painting , gently guide them back to {active_painting}.
 Keep your responses short. Do not ask the user any questions.
-Here is a list of items with descriptions:{items}
-Here is a list of genres and materials used in the painting:{materialsAndGenres}
+Here is a list of items with descriptions:{items}.
+Here is a list of genres and materials used in the painting:{materialsAndGenres}.
+if the user tries to talk about an item not in the list tell them that is not in the painting and describe one that is.
+if the user is not talking about the painting ask them to focus on the painting.
 """
-        print(instructions)
+        # print(instructions)
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
