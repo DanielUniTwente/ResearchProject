@@ -1,4 +1,4 @@
-# Conversation agent leveraging VTS for preference gathering during an art exhibition
+# Conversation agent leveraging VTS for opinion forming during an art exhibition
 
 # Instalation
 ### Prerequisites
@@ -19,7 +19,7 @@
 
     To setup a connection to a Neo4j DBMS you have to assign three variable in the databaseCredentials.txt file
     1. URI - to the address your DBMS is hosted
-    2. USERNAME - the username with which you will access the
+    2. USERNAME - the username with which you will access the database
     3. PASSWORD - the password that allows you access
 
 ### Usage

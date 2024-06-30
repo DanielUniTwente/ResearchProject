@@ -5,16 +5,8 @@ flows:
       - action: "utter_greet"
       - link: "choose_painting"
 
-  # user_help:
-  #   description: "User asks for help or does not know how to answer a question"
-  #   steps:
-  #     - action: "utter_help"
-  #     - link: "choose_painting"
-
   switch_painting:
     description: "The user wants to switch to discussing another painting"
-    # nlu_trigger:
-    #   - intent: switch_painting
     steps:
         - action: "action_reset_known_objects"
         - link: "choose_painting"
@@ -126,36 +118,6 @@ flows:
         next: "ask_interpretation"
       - id: "choose_next"
         link: "summary"
-
-  # describe_interpretation:
-  #   description: "Asks the user to describe how they interpret their current painting"
-  #   if: "slots.active_painting and slots.stage == 'describe interpretation'"
-  #   steps:
-  #     - id: "set_stage"
-  #       set_slots:
-  #         - stage: "describe interpretation"
-  #       next: "ask_interpretation"
-  #     - id: "ask_interpretation"
-  #       collect: "current_interpretation"
-  #       ask_before_filling: true
-  #       reset_after_flow_ends: false
-  #       utter: action_interpretation_api
-  #       next: 
-  #         - if: "slots.current_interpretation"
-  #           then: "ask_save_interpretation"
-  #         - else: "ask_interpretation"
-  #     - id: "ask_save_interpretation"
-  #       action: "utter_ask_save_interpretation"
-  #       next:
-  #         - if: "slots.save_interpretation"
-  #           then: "save_interpretation"
-  #         - else: "choose_next"
-  #     - id: save_interpretation
-  #       action: action_send_interpretation_to_database
-  #       next: "choose_next"
-  #     - id: "choose_next"
-  #       link: "summary"
-
 
   summary:
     description: "Summarizes the user's observations and feelings about the painting"

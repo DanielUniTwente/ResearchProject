@@ -37,14 +37,8 @@ class ActionSendToAPI(Action):
             tracker: Tracker,
             domain: Dict[Text, Any]) -> List[Dict[Text, Any]]:
         
-        # for event in reversed(tracker.events):
-        #     if event.get("event") == "user":
-        #         user_message = event.get("text")
-        #         break
-        # print(user_message)
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
-        # print(f"the active painting:{active_painting}")
         stage = tracker.get_slot("stage")
         query = f"""MATCH (p:Paintings)-->(i:Item) 
                     WHERE p.name="{active_painting}" 
@@ -56,12 +50,8 @@ class ActionSendToAPI(Action):
         knownObjects = tracker.get_slot("known_objects") 
         databaseObjects=usefull.callDatabase(query)
         databaseItems=""
-        # not_mentioned=""
         for record in databaseObjects:
             databaseItems = databaseItems + f"""Object: {record['name']} Description: {record['description']}"""
-        # for item in knownObjects:
-        #     not_mentioned = not_mentioned + f"""Item: {item[0]}\nDescription: {item[1]}\n"""
-        # print(f"known objects: {databaseItems}")
         instructions = f"""
 You are a tour guide trained in Visual Thinking Strategies (VTS). 
 You are chatting with a single user who is interested in learning more about the artwork {active_painting}.
@@ -72,28 +62,23 @@ If the user wants to talk about a specific item ask a question about it.
 Ensure all of your responses transition smoothly with the latest message in the conversation. Always finish with a question.
 If the user tries to talk about another painting , gently guide them back to {active_painting}.
 You want to do this in 4 stages. The current stage is {stage}. Vary the beginnings of your responses. Do not say the stage.
-In the painting there are one person and some items. Here is a list with descriptions:
+Here is a list of items with descriptions of what is in the painting:
 {databaseItems}.
 If the user mentions an item without describing it, prompt them to describe it.
 Do not use the description of items when forming a question about them. Do not talk or make up items that are not in the list.
 If the user begins describing objects not in the above list prompt them with one of them.
-If the user is struggling to answer a question apologise and try to reword it.
 """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
-        # print(messages)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
-        print(stage)
         # remove mentioned items from knownObjects
         if knownObjects is None:
             return [SlotSet('known_objects',  databaseObjects)]
         elif len(knownObjects) <= len(databaseObjects)*(50/100):
-            print("we should transition to the next stage")
             return [SlotSet('no_objects',  True), SlotSet('known_objects',  None)]
         else:
             del messages[0]
             covered_items = usefull.check_mentions(messages[-3:], knownObjects)
-            # print([t for t in knownObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in knownObjects if t[0] not in covered_items])]  
 
 class ActionAuthorTechnique(Action):    
@@ -131,19 +116,16 @@ Do not talk about items not in the list.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
-        print(f"{stage}")
         dispatcher.utter_message(text=openai_response)
 
         # remove mentioned entries from knownObjects
         if materialsAndGenres is None:
             return [SlotSet('known_objects',  databaseObjects)]
         elif len(materialsAndGenres) < len(databaseObjects)*(50/100):
-            print("we should transition to the next stage")
             return [SlotSet('no_objects',  True), SlotSet('known_objects',  None)]
         else:
             del messages[0]
             covered_items = usefull.check_mentions(messages[-3:], databaseObjects)
-            # print([t for t in databaseObjects if t[0] not in covered_items])
             return [SlotSet('known_objects', [t for t in databaseObjects if t[0] not in covered_items])]
         
 class ActionInterpretation(Action):
@@ -159,7 +141,6 @@ class ActionInterpretation(Action):
         active_painting = tracker.get_slot("active_painting")
         stage = tracker.get_slot("stage")   
         database_inter=usefull.get_interpretations(active_painting)
-        print(stage)
         interpretations = ""
         if database_inter is not None:
             for item in database_inter:
@@ -211,7 +192,6 @@ class ActionSummarize(Action):
         # user_input = tracker.latest_message.get('text')
         conversation_history = tracker.events
         active_painting = tracker.get_slot("active_painting")
-        print("summary")
         query = f"""MATCH (n:Paintings) WHERE n.name="{active_painting}" RETURN n.exhibit"""
         description = usefull.callDatabase(query)[0].data()["n.exhibit"]
         instructions = f"""
@@ -221,7 +201,6 @@ Do not ask the user any more questions.
         """
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
-        # print(openai_response)
         dispatcher.utter_message(text=openai_response)
         return [] 
     
@@ -282,7 +261,6 @@ Here is a list of genres and materials used in the painting:{materialsAndGenres}
 if the user tries to talk about an item not in the list tell them that is not in the painting and describe one that is.
 if the user is not talking about the painting ask them to focus on the painting.
 """
-        # print(instructions)
         messages = usefull.constructPrompt(conversation_history, active_painting, instructions)
         openai_response = usefull.getAPIResponse(messages)
         dispatcher.utter_message(text=openai_response)
@@ -333,35 +311,26 @@ class usefull():
         return doc.vector
 
     def check_mentions(chat, items, threshold=0.60):
-    # Embed chat
         chat_embeddings = [usefull.embed_text(entry['content'], nlp) for entry in chat]
-        
-        # Embed item names and descriptions separately
         item_embeddings = [(name, usefull.embed_text(name, nlp), usefull.embed_text(description, nlp) if description else None) 
                         for name, description in items]
-        
         results = []
         for item_name, name_embedding, desc_embedding in item_embeddings:
             mentioned = False
             for chat_embedding in chat_embeddings:
-                # Check similarity with item name
                 name_similarity = 1 - cosine(chat_embedding, name_embedding)
-                # print(f"Similarity for item name '{item_name}': {name_similarity}")
                 if name_similarity > threshold:
                     mentioned = True
                     break
                 
-                # Check similarity with item description if it exists
                 if desc_embedding is not None:
                     desc_similarity = 1 - cosine(chat_embedding, desc_embedding)
-                    # print(f"Similarity for item description of '{item_name}': {desc_similarity}")
                     if desc_similarity > threshold:
                         mentioned = True
                         break
 
             if mentioned:
                 results.append(item_name)
-        
         return results
     
     # def extract_emotion(text):

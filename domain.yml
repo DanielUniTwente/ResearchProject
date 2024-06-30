@@ -6,13 +6,10 @@ intents:
 - deny
 - bot_challenge
 - observation
-# - choose_painting
-# - describe_feelings
 - struggle
 - end_of_interpertation
 - switch_painting
 - stop_discussion
-# - stop_switch_discussion
 
 actions:
 - utter_greet
@@ -167,58 +164,6 @@ responses:
   - text: Let's focus on the painting.
     metadata:
       rephrase: true
-  # utter_ask_detail:
-  # - text: Can you elaborate on that?
-  # - text: Can you provide more details?
-  # - text: What else can you tell me about it?
-  # utter_commend_observation:
-  # - text: That's a great observation!
-  # - text: Excellent observation!
-  # utter_ask_feelings:
-  # - text: How does that make you feel?
-  # - text: What emotions does that evoke?
-  # - text: What do you think about that?
-  # utter_explain_feelings:
-  # - text: Why do you feel that way?
-  # - text: What do you think caused that feeling?
-  # - text: Can you explain why you feel that way?
-  # utter_look_closer:
-  # - text: Take a closer look.
-  # - text: Look closer.
-  # - text: Examine it more closely.
-  # utter_ask_interpretation:
-  # - text: What do you think it means?
-  # - text: What do you think the artist is trying to convey?
-  # - text: What is your interpretation?
-  # utter_compare_active_favourite:
-  # - condition:
-  #   - type: slot
-  #     name: favourite_painting
-  #     value: _
-  #   - type: slot
-  #     name: active_painting
-  #     value: _
-  #   - type: custom
-  #     name: compare_slots
-  #     value: different
-  #   text: How does the {active_painting} compare to {favourite_painting}?
-  # utter_compare_last_active:
-  # - text: What similarities do you see between {last_active_painting} and {active_painting}?
-  # utter_ask_favourite_painting:
-  # - text: What is your favourite painting so far?
-  # - text: Which painting do you like the most?
-  # - text: Which painting is your favourite?
-  # utter_brigde_prompts:
-  # - text: I see
-  # - text: Interesting
-  # - text: OK good observation
-  # utter_stop:
-  # - text: Ok, let's stop here
-  # - text: Alright
-  # utter_ask_next_painting:
-  # - text: Do you want to see the next painting?
-  # - text: Would you like to see the next painting?
-  # - text: Shall we move on to the next painting?
 session_config:
   session_expiration_time: 60
   carry_over_slots_to_new_session: true
