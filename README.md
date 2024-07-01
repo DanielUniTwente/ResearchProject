@@ -23,6 +23,10 @@
     3. PASSWORD - the password that allows you access
 
 ### Usage
+Before running the chatbot train the model by typing this command in terminal
+
+    rasa train
+
 To start rasa run this command in terminal.
 
     rasa run
