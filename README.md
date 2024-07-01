@@ -35,7 +35,8 @@ To run the rasa custom action server, which allows execution of custom actions r
 
     rasa run actions
 
-To start the UI run the app.py file and go to the specified address
+
+To start the UI run the app.py file and go to the specified address. Before using the system ensure that your neo4j DBMS is running. 
 
     
 
